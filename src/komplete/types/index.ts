@@ -1006,6 +1006,39 @@ export class ConfigError extends KompleteError {
 }
 
 /**
+ * Tool execution error
+ * Thrown when a tool fails to execute properly
+ */
+export class ToolError extends KompleteError {
+  constructor(
+    message: string,
+    public toolName: string,
+    public code: string = 'TOOL_ERROR',
+    details?: Record<string, unknown>
+  ) {
+    super(message, code, { ...details, toolName });
+    this.name = 'ToolError';
+  }
+}
+
+/**
+ * Mode switching error
+ * Thrown when mode switching fails
+ */
+export class ModeError extends KompleteError {
+  constructor(
+    message: string,
+    public fromMode: OperationalMode | undefined,
+    public toMode: OperationalMode,
+    public code: string = 'MODE_ERROR',
+    details?: Record<string, unknown>
+  ) {
+    super(message, code, { ...details, fromMode, toMode });
+    this.name = 'ModeError';
+  }
+}
+
+/**
  * Record of a tool call during agent execution
  */
 export interface ToolCallRecord {
