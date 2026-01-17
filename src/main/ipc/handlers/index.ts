@@ -28,6 +28,7 @@ import { registerMarketplaceHandlers, MarketplaceHandlerDependencies } from './m
 import { registerStatsHandlers, StatsHandlerDependencies } from './stats';
 import { registerDocumentGraphHandlers, DocumentGraphHandlerDependencies } from './documentGraph';
 import { registerSshRemoteHandlers, SshRemoteHandlerDependencies } from './ssh-remote';
+import { registerKompleteHandlers, KompleteHandlerDependencies } from './komplete';
 import { AgentDetector } from '../../agent-detector';
 import { ProcessManager } from '../../process-manager';
 import { WebServer } from '../../web-server';
@@ -57,6 +58,8 @@ export type { MarketplaceHandlerDependencies };
 export { registerStatsHandlers };
 export { registerDocumentGraphHandlers };
 export { registerSshRemoteHandlers };
+export { registerKompleteHandlers };
+export type { KompleteHandlerDependencies };
 export type { AgentsHandlerDependencies };
 export type { ProcessHandlerDependencies };
 export type { PersistenceHandlerDependencies };
@@ -197,6 +200,10 @@ export function registerAllHandlers(deps: HandlerDependencies): void {
   });
   // Register SSH remote handlers
   registerSshRemoteHandlers({
+    settingsStore: deps.settingsStore,
+  });
+  // Register Komplete-Kontrol specific handlers
+  registerKompleteHandlers({
     settingsStore: deps.settingsStore,
   });
   // Setup logger event forwarding to renderer

@@ -77,8 +77,9 @@ function getDefaultConfigPaths(): string[] {
 
 /**
  * Default configuration paths (computed)
+ * @internal Exported for testing purposes
  */
-const DEFAULT_CONFIG_PATHS = getDefaultConfigPaths();
+export const DEFAULT_CONFIG_PATHS = getDefaultConfigPaths();
 
 // ============================================================================
 // Default Configuration Values
@@ -247,7 +248,7 @@ const ConfigSchema = z.object({
       name: z.string(),
       command: z.string(),
       args: z.array(z.string()).optional(),
-      env: z.record(z.string()).optional(),
+      env: z.record(z.string(), z.string()).optional(),
       disabled: z.boolean().optional(),
     })).default([]),
     enabled: z.boolean().default(true),
@@ -475,7 +476,7 @@ export class ConfigManager {
     } catch (error) {
       if (error instanceof z.ZodError) {
         throw new ConfigError('Configuration validation failed', {
-          errors: error.errors,
+          errors: error.issues,
         });
       }
       throw error;

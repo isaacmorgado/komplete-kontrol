@@ -1756,6 +1756,129 @@ contextBridge.exposeInMainWorld('maestro', {
   },
 });
 
+// ============================================================================
+// Komplete-Kontrol Specific API
+// ============================================================================
+// Expose Komplete-Kontrol specific methods for operational modes, tools,
+// providers, and configuration management.
+
+/**
+ * Operational mode type for Komplete-Kontrol
+ */
+type OperationalMode = 'architect' | 'code' | 'debug' | 'test' | 'reverse-engineer' | 'ask';
+
+/**
+ * Tool group type for Komplete-Kontrol
+ */
+type ToolGroup = 'read' | 'edit' | 'browser' | 'command' | 'mcp' | 'modes';
+
+/**
+ * Operational mode configuration
+ */
+interface OperationalModeConfig {
+  slug: OperationalMode;
+  displayName: string;
+  roleDefinition: string;
+  toolGroups: ToolGroup[];
+  temperature?: number;
+  maxTokens?: number;
+}
+
+/**
+ * Provider information
+ */
+interface ProviderInfo {
+  id: string;
+  name: string;
+  prefix: string;
+  configured: boolean;
+  defaultModel?: string;
+}
+
+contextBridge.exposeInMainWorld('komplete', {
+  // Mode management API
+  modes: {
+    /**
+     * Get the current operational mode and its configuration
+     */
+    getCurrent: () => ipcRenderer.invoke('komplete:mode:get-current') as Promise<{
+      mode: OperationalMode;
+      config: OperationalModeConfig;
+    }>,
+
+    /**
+     * Switch to a different operational mode
+     * @param mode - The mode to switch to
+     */
+    switch: (mode: OperationalMode) => ipcRenderer.invoke('komplete:mode:switch', mode) as Promise<{
+      success: boolean;
+      previousMode?: OperationalMode;
+      currentMode?: OperationalMode;
+      config?: OperationalModeConfig;
+      error?: string;
+    }>,
+
+    /**
+     * Get all available operational modes and their configurations
+     */
+    getAll: () => ipcRenderer.invoke('komplete:mode:get-all') as Promise<{
+      modes: OperationalMode[];
+      configs: Record<OperationalMode, OperationalModeConfig>;
+      currentMode: OperationalMode;
+    }>,
+  },
+
+  // Tool management API
+  tools: {
+    /**
+     * Get available tools for the current mode
+     */
+    getAvailable: () => ipcRenderer.invoke('komplete:tools:get-available') as Promise<{
+      mode: OperationalMode;
+      toolGroups: ToolGroup[];
+      tools: string[];
+      allToolGroups: ToolGroup[];
+      toolsByGroup: Record<ToolGroup, string[]>;
+    }>,
+  },
+
+  // Provider management API
+  providers: {
+    /**
+     * List all available AI providers
+     */
+    list: () => ipcRenderer.invoke('komplete:providers:list') as Promise<{
+      providers: ProviderInfo[];
+      defaultProvider: string;
+    }>,
+  },
+
+  // Configuration management API
+  config: {
+    /**
+     * Get a configuration value by key
+     * Supports nested keys using dot notation (e.g., 'providers.anthropic.apiKey')
+     * @param key - The configuration key to retrieve
+     */
+    get: (key: string) => ipcRenderer.invoke('komplete:config:get', key) as Promise<{
+      success: boolean;
+      value?: unknown;
+      error?: string;
+    }>,
+
+    /**
+     * Set a configuration value
+     * Supports nested keys using dot notation (e.g., 'providers.anthropic.apiKey')
+     * @param key - The configuration key to set
+     * @param value - The value to set
+     */
+    set: (key: string, value: unknown) => ipcRenderer.invoke('komplete:config:set', key, value) as Promise<{
+      success: boolean;
+      error?: string;
+    }>,
+  },
+});
+
 // Type definitions for TypeScript
 export interface MaestroAPI {
   settings: {
@@ -3086,8 +3209,87 @@ export interface MaestroAPI {
   };
 }
 
+/**
+ * Komplete-Kontrol specific API
+ * Provides access to operational modes, tools, providers, and configuration
+ */
+export interface KompleteAPI {
+  modes: {
+    getCurrent: () => Promise<{
+      mode: 'architect' | 'code' | 'debug' | 'test' | 'reverse-engineer' | 'ask';
+      config: {
+        slug: string;
+        displayName: string;
+        roleDefinition: string;
+        toolGroups: string[];
+        temperature?: number;
+        maxTokens?: number;
+      };
+    }>;
+    switch: (mode: 'architect' | 'code' | 'debug' | 'test' | 'reverse-engineer' | 'ask') => Promise<{
+      success: boolean;
+      previousMode?: string;
+      currentMode?: string;
+      config?: {
+        slug: string;
+        displayName: string;
+        roleDefinition: string;
+        toolGroups: string[];
+        temperature?: number;
+        maxTokens?: number;
+      };
+      error?: string;
+    }>;
+    getAll: () => Promise<{
+      modes: string[];
+      configs: Record<string, {
+        slug: string;
+        displayName: string;
+        roleDefinition: string;
+        toolGroups: string[];
+        temperature?: number;
+        maxTokens?: number;
+      }>;
+      currentMode: string;
+    }>;
+  };
+  tools: {
+    getAvailable: () => Promise<{
+      mode: string;
+      toolGroups: string[];
+      tools: string[];
+      allToolGroups: string[];
+      toolsByGroup: Record<string, string[]>;
+    }>;
+  };
+  providers: {
+    list: () => Promise<{
+      providers: Array<{
+        id: string;
+        name: string;
+        prefix: string;
+        configured: boolean;
+        defaultModel?: string;
+      }>;
+      defaultProvider: string;
+    }>;
+  };
+  config: {
+    get: (key: string) => Promise<{
+      success: boolean;
+      value?: unknown;
+      error?: string;
+    }>;
+    set: (key: string, value: unknown) => Promise<{
+      success: boolean;
+      error?: string;
+    }>;
+  };
+}
+
 declare global {
   interface Window {
     maestro: MaestroAPI;
+    komplete: KompleteAPI;
   }
 }

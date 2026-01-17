@@ -668,7 +668,6 @@ export class Logger {
    */
   startTimer(operationName: string, context?: LogContext): () => void {
     const startTime = performance.now();
-    const startDate = new Date();
 
     return () => {
       const endTime = performance.now();
