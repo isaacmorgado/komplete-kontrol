@@ -121,7 +121,75 @@ export interface Tool {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  /**
+   * Optional execute function for tool implementation
+   * When provided, allows the tool to be executed directly
+   */
+  execute?: (args: Record<string, unknown>) => Promise<ToolResult>;
 }
+
+// ============================================================================
+// Section 2.1: Base Types (Tool Calling)
+// ============================================================================
+
+/**
+ * Tool call interface for AI-initiated tool invocations
+ * Used when an AI model requests to execute a tool
+ */
+export interface ToolCall {
+  /**
+   * Unique identifier for this tool call
+   */
+  id: string;
+  /**
+   * Name of the tool being called
+   */
+  name: string;
+  /**
+   * Arguments to pass to the tool (JSON-serializable)
+   */
+  arguments: Record<string, unknown>;
+}
+
+/**
+ * Result of a tool execution
+ */
+export interface ToolResult {
+  /**
+   * ID of the tool call this result corresponds to
+   */
+  toolCallId: string;
+  /**
+   * Whether the tool execution succeeded
+   */
+  success: boolean;
+  /**
+   * Result content (string or structured data)
+   */
+  content: string | Record<string, unknown>;
+  /**
+   * Error message if the tool execution failed
+   */
+  error?: string;
+}
+
+/**
+ * Enhanced Message interface with tool_calls support
+ * Extends the base Message for AI tool calling workflows
+ */
+export interface MessageWithToolCalls extends Message {
+  /**
+   * Tool calls requested by the assistant
+   * Present when role is 'assistant' and AI wants to invoke tools
+   */
+  tool_calls?: ToolCall[];
+}
+
+/**
+ * Completion response interface (alias for CompletionResult)
+ * Provides a cleaner name matching the spec
+ */
+export type CompletionResponse = CompletionResult;
 
 /**
  * Provider prefix types
@@ -160,12 +228,85 @@ export interface ProviderCapabilities {
  * AI Provider interface
  */
 export interface AIProvider {
+  /** Unique provider identifier */
+  id?: string;
   name: string;
   prefix: ProviderPrefix;
   capabilities: ProviderCapabilities;
   complete(model: string, messages: Message[], options?: CompletionOptions): Promise<CompletionResult>;
   stream(model: string, messages: Message[], options?: CompletionOptions): AsyncGenerator<StreamChunk>;
   countTokens(messages: Message[]): Promise<number>;
+}
+
+// ============================================================================
+// Section 2.4: Provider Types
+// ============================================================================
+
+/**
+ * Provider configuration for initializing AI providers
+ */
+export interface ProviderConfig {
+  /** API key for authentication */
+  apiKey?: string;
+  /** Base URL for the API (for self-hosted or proxied endpoints) */
+  baseUrl?: string;
+  /** Model identifier to use */
+  modelId?: string;
+  /** Request timeout in milliseconds */
+  timeout?: number;
+  /** Custom headers to include in requests */
+  headers?: Record<string, string>;
+  /** Organization ID (for providers that support it) */
+  organization?: string;
+}
+
+/**
+ * Model capabilities interface
+ * Detailed capability information for a specific model
+ */
+export interface ModelCapabilities {
+  /** Whether the model supports native tool/function calling */
+  nativeToolCalling: boolean;
+  /** Maximum input tokens supported */
+  maxInputTokens: number;
+  /** Maximum output tokens supported */
+  maxOutputTokens: number;
+  /** Maximum total context window */
+  maxContextWindow: number;
+  /** Whether the model supports vision/image input */
+  supportsVision: boolean;
+  /** Whether the model supports streaming responses */
+  supportsStreaming: boolean;
+  /** Whether the model supports JSON mode */
+  supportsJsonMode: boolean;
+  /** Whether the model supports system messages */
+  supportsSystemMessage: boolean;
+  /** Cost per 1K input tokens (USD) */
+  inputCostPer1k?: number;
+  /** Cost per 1K output tokens (USD) */
+  outputCostPer1k?: number;
+}
+
+/**
+ * Extended token usage tracking
+ * More detailed than the basic TokenUsage interface
+ */
+export interface DetailedTokenUsage {
+  /** Number of tokens in the prompt/input */
+  promptTokens: number;
+  /** Number of tokens in the completion/output */
+  completionTokens: number;
+  /** Total tokens used (prompt + completion) */
+  totalTokens: number;
+  /** Cached tokens (if using prompt caching) */
+  cachedTokens?: number;
+  /** Cost breakdown */
+  cost?: {
+    inputCost: number;
+    outputCost: number;
+    totalCost: number;
+    currency: string;
+  };
 }
 
 /**
@@ -218,6 +359,121 @@ export interface AgentDefinition {
   systemPrompt: string;
   dependencies?: string[];
   tags?: string[];
+}
+
+// ============================================================================
+// Section 2.2: Agent Types
+// ============================================================================
+
+/**
+ * Agent state enumeration
+ * Represents the current execution state of an agent
+ */
+export enum AgentState {
+  /** Agent is ready and waiting for input */
+  Idle = 'idle',
+  /** Agent is processing/reasoning about the task */
+  Thinking = 'thinking',
+  /** Agent is executing a tool or action */
+  Executing = 'executing',
+  /** Agent encountered an error */
+  Error = 'error',
+  /** Agent has completed its task */
+  Complete = 'complete',
+}
+
+/**
+ * Agent configuration extending Maestro's base with mode support
+ */
+export interface AgentConfig extends AgentDefinition {
+  /**
+   * Operational mode this agent operates in
+   */
+  mode?: OperationalMode;
+  /**
+   * Preferred model for this agent
+   */
+  preferredModel?: string;
+  /**
+   * Provider to use (if not using default)
+   */
+  provider?: ProviderPrefix;
+  /**
+   * Maximum iterations in agentic loop
+   */
+  maxIterations?: number;
+  /**
+   * Execution timeout in milliseconds
+   */
+  timeoutMs?: number;
+  /**
+   * Whether streaming is enabled
+   */
+  enableStreaming?: boolean;
+  /**
+   * Tool groups this agent can access
+   */
+  toolGroups?: ToolGroup[];
+}
+
+/**
+ * Agent capabilities interface with feature flags
+ */
+export interface AgentCapabilities {
+  /** Can read files from filesystem */
+  fileRead: boolean;
+  /** Can write/edit files */
+  fileWrite: boolean;
+  /** Can execute shell commands */
+  shellExec: boolean;
+  /** Can browse the web */
+  webBrowse: boolean;
+  /** Can use MCP tools */
+  mcpTools: boolean;
+  /** Can spawn sub-agents */
+  subAgents: boolean;
+  /** Supports vision/image input */
+  vision: boolean;
+  /** Supports streaming responses */
+  streaming: boolean;
+  /** Maximum context window size */
+  maxContextTokens: number;
+  /** Custom capabilities (extensible) */
+  custom?: Record<string, boolean>;
+}
+
+/**
+ * Agent runtime context
+ * Contains all runtime state for an executing agent
+ */
+export interface AgentContext {
+  /** Unique session identifier */
+  sessionId: string;
+  /** Agent identifier */
+  agentId: string;
+  /** Current operational mode */
+  mode: OperationalMode;
+  /** Current working directory */
+  workingDirectory: string;
+  /** Environment variables available to the agent */
+  env: Record<string, string>;
+  /** Message history for this context */
+  messages: Message[];
+  /** Available tools for this context */
+  tools: Tool[];
+  /** Current agent state */
+  state: AgentState;
+  /** Metadata for tracking/debugging */
+  metadata: {
+    startedAt: Date;
+    lastActivityAt: Date;
+    iterationCount: number;
+    tokenUsage: {
+      input: number;
+      output: number;
+      total: number;
+    };
+  };
 }
 
 /**
@@ -469,7 +725,7 @@ export interface SessionConfig {
 }
 
 /**
- * Agent modes
+ * Agent modes (legacy - retained for backward compatibility)
  */
 export type AgentMode =
   | 'general'
@@ -479,7 +735,7 @@ export type AgentMode =
   | 'spark';
 
 /**
- * Mode configuration
+ * Mode configuration (legacy)
  */
 export interface ModeConfig {
   mode: AgentMode;
@@ -496,6 +752,72 @@ export interface ResourceLimits {
   maxTokensPerRequest: number;
   maxCostPerCommand: number;
   timeoutMs: number;
+}
+
+// ============================================================================
+// Section 2.3: Mode Types (Komplete-Kontrol Operational Modes)
+// ============================================================================
+
+/**
+ * Operational mode for Komplete-Kontrol
+ * Defines the behavioral mode of the AI agent
+ */
+export type OperationalMode =
+  | 'architect'         // High-level design and planning
+  | 'code'              // Code generation and modification
+  | 'debug'             // Debugging and troubleshooting
+  | 'test'              // Test generation and execution
+  | 'reverse-engineer'  // Reverse engineering and analysis
+  | 'ask';              // Q&A and information retrieval
+
+/**
+ * Tool group categories
+ * Groups of tools that can be enabled/disabled together
+ */
+export type ToolGroup =
+  | 'read'      // File reading, search, exploration
+  | 'edit'      // File editing, creation, deletion
+  | 'browser'   // Web browsing and HTTP requests
+  | 'command'   // Shell command execution
+  | 'mcp'       // MCP server tools
+  | 'modes';    // Mode switching capabilities
+
+/**
+ * Tool group configuration
+ * Defines which tools are available within a tool group
+ */
+export interface ToolGroupConfig {
+  /** The tool group this config applies to */
+  group: ToolGroup;
+  /** List of enabled tool names in this group */
+  tools: string[];
+  /** Custom tools added to this group */
+  customTools?: Tool[];
+  /** Whether this group is enabled */
+  enabled: boolean;
+}
+
+/**
+ * Operational mode configuration (Komplete-Kontrol specific)
+ * Defines behavior and capabilities for each operational mode
+ */
+export interface OperationalModeConfig {
+  /** Mode identifier slug */
+  slug: OperationalMode;
+  /** Display name */
+  displayName: string;
+  /** Role definition / system prompt for this mode */
+  roleDefinition: string;
+  /** Tool groups available in this mode */
+  toolGroups: ToolGroup[];
+  /** Preferred model for this mode (optional) */
+  preferredModel?: string;
+  /** Temperature setting for this mode */
+  temperature?: number;
+  /** Maximum tokens per request */
+  maxTokens?: number;
+  /** Custom tool configurations */
+  toolConfigs?: ToolGroupConfig[];
 }
 
 /**
