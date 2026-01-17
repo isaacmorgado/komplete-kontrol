@@ -154,7 +154,7 @@ export class ProviderLoadBalancer {
       });
 
       const result = await Promise.race([
-        provider.countTokens([{ role: 'user', content: 'Health check' }]),
+        provider.countTokens([{ role: 'user', content: [{ type: 'text', text: 'Health check' }] }]),
         timeoutPromise,
       ]);
 

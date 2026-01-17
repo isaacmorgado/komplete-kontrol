@@ -69,7 +69,7 @@ export class EchoMCPServer {
         const message = JSON.parse(line) as JSONRPCMessage;
         this.handleMessage(message);
       } catch (error) {
-        this.sendError(-32700, 'Parse error', { line });
+        this.sendError(0, -32700, 'Parse error', { line });
       }
     });
 
@@ -196,7 +196,7 @@ export class EchoMCPServer {
 
     if (params.name !== 'echo') {
       this.sendError(
-        message.id,
+        message.id ?? 0,
         -32602,
         `Unknown tool: ${params.name}`
       );
@@ -285,7 +285,5 @@ export function startEchoServer(): void {
   server.start();
 }
 
-// Start server if this file is run directly
-if (import.meta.main) {
-  startEchoServer();
-}
+// Note: To start the server, call startEchoServer() from your entry point
+// The Bun-specific import.meta.main check has been removed for Node.js compatibility

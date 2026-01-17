@@ -58,6 +58,7 @@ export class ProviderRegistry {
       throw new ProviderError(
         `Provider with prefix '${prefix}' is already registered`,
         'ProviderRegistry',
+        'DUPLICATE_PROVIDER',
         { prefix, existingProvider: this.providers.get(prefix)!.provider.name }
       );
     }

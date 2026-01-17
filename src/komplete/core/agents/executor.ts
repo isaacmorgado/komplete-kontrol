@@ -557,21 +557,24 @@ export class AgentExecutor {
     }
 
     // Convert result content to string
-    if (typeof result.content === 'string') {
-      return result.content;
+    const content = result.content;
+    if (typeof content === 'string') {
+      return content;
     }
 
-    if (Array.isArray(result.content)) {
-      return result.content
-        .map((item) => {
+    if (Array.isArray(content)) {
+      return (content as unknown[])
+        .map((item: unknown) => {
           if (typeof item === 'string') return item;
-          if (item.type === 'text' && 'text' in item) return item.text;
+          if (typeof item === 'object' && item !== null && 'type' in item && (item as { type: string }).type === 'text' && 'text' in item) {
+            return (item as { text: string }).text;
+          }
           return JSON.stringify(item);
         })
         .join('\n');
     }
 
-    return JSON.stringify(result.content);
+    return JSON.stringify(content);
   }
 
   /**

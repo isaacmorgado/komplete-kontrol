@@ -51,7 +51,7 @@ export class ModelRouter {
    */
   parseModel(model: string): ParsedModel {
     if (!model || model.trim().length === 0) {
-      throw new ProviderError('Model string cannot be empty', 'ModelRouter', { model });
+      throw new ProviderError('Model string cannot be empty', 'ModelRouter', 'VALIDATION_ERROR', { model });
     }
 
     const trimmed = model.trim();
@@ -69,6 +69,7 @@ export class ModelRouter {
         throw new ProviderError(
           `Invalid provider prefix: ${prefix}`,
           'ModelRouter',
+          'VALIDATION_ERROR',
           { model, prefix, validPrefixes }
         );
       }
@@ -112,6 +113,7 @@ export class ModelRouter {
       throw new ProviderError(
         `Provider '${parsed.prefix}' is not registered`,
         'ModelRouter',
+        'PROVIDER_NOT_FOUND',
         { model, prefix: parsed.prefix }
       );
     }

@@ -138,12 +138,14 @@ export class AgentMCPIntegration {
   private matchScores: number[] = [];
 
   constructor(config: AgentMCPIntegrationConfig = {}, logger?: LoggerLike) {
+    const cacheTtl = config.cacheTtlMs ?? config.cacheTTL ?? 300000; // 5 minutes
     this.config = {
       autoDiscover: config.autoDiscover ?? true,
       minMatchScore: config.minMatchScore ?? 0.3,
       maxToolsPerCapability: config.maxToolsPerCapability ?? 5,
       enableCache: config.enableCache ?? true,
-      cacheTtlMs: config.cacheTtlMs ?? config.cacheTTL ?? 300000, // 5 minutes
+      cacheTtlMs: cacheTtl,
+      cacheTTL: cacheTtl,
     };
     this.logger = logger || new Logger();
     this.logger.info('AgentMCPIntegration initialized', 'AgentMCPIntegration', this.config);

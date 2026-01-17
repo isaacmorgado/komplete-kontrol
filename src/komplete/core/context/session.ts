@@ -43,8 +43,7 @@ export class SessionManager {
   async initialize(): Promise<void> {
     try {
       // Ensure sessions directory exists
-      const dir = new URL(this.config.sessionsDir, import.meta.url);
-      const dirExists = await Bun.file(dir.pathname).exists();
+      const dirExists = await fs.access(this.config.sessionsDir).then(() => true).catch(() => false);
 
       if (!dirExists) {
         // Create directory using fs.mkdir

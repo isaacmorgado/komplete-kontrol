@@ -291,6 +291,9 @@ export class StdioBridge {
 
       try {
         const message = JSON.stringify(request) + '\n';
+        if (!this.process || !this.process.stdin) {
+          throw new Error('Process stdin is not available');
+        }
         this.process.stdin.write(message);
         this.logger.debug(
           `Sent message to MCP server: ${this.config.serverId}`,

@@ -5,8 +5,19 @@
  * with buffering, chunk aggregation, and event emission.
  */
 
-import type { AIProvider, Message, CompletionOptions, StreamChunk } from '../../../types';
+import type { AIProvider, Message, CompletionOptions, StreamChunk, MessageContent } from '../../../types';
 import { Logger, LoggerLike } from '../../../utils/logger';
+
+/**
+ * Extract text from MessageContent
+ */
+function extractText(content: MessageContent | undefined): string {
+  if (!content) return '';
+  if (content.type === 'text') return content.text;
+  if (content.type === 'tool_use') return JSON.stringify(content.input);
+  if (content.type === 'tool_result') return typeof content.content === 'string' ? content.content : JSON.stringify(content.content);
+  return '';
+}
 
 /**
  * Stream event type
@@ -194,7 +205,7 @@ export class StreamingResponseHandler {
         if (this.config.buffer.enableBuffering) {
           // When buffering, only yield when buffer is flushed
           if (state.buffer.length >= this.config.buffer.bufferSize) {
-            yield { content: state.buffer, metadata: state.metadata };
+            yield { content: { type: 'text' as const, text: state.buffer }, metadata: state.metadata };
             state.buffer = '';
           }
         } else {
@@ -205,7 +216,7 @@ export class StreamingResponseHandler {
 
       // Flush remaining buffer
       if (this.config.buffer.enableBuffering && state.buffer.length > 0) {
-        yield { content: state.buffer, metadata: state.metadata };
+        yield { content: { type: 'text' as const, text: state.buffer }, metadata: state.metadata };
         state.buffer = '';
       }
 
@@ -540,14 +551,17 @@ export class StreamUtils {
   }
 
   /**
-   * Stream to a writable stream
+   * Stream to text strings
    */
   static async *streamToText(
     stream: AsyncGenerator<StreamChunk>
   ): AsyncGenerator<string> {
     for await (const chunk of stream) {
       if (chunk.content) {
-        yield chunk.content;
+        const text = extractText(chunk.content);
+        if (text) {
+          yield text;
+        }
       }
     }
   }
@@ -576,22 +590,25 @@ export class StreamUtils {
     generators: AsyncGenerator<T>[]
   ): AsyncGenerator<T> {
     const iterators = generators.map(g => g[Symbol.asyncIterator]());
-    const pending = new Map<AsyncIterator<T>, Promise<IteratorResult<T>>>();
+    const pending = new Map<AsyncIterator<T>, Promise<{ iterator: AsyncIterator<T>; result: IteratorResult<T> }>>();
+
+    const wrapPromise = (iterator: AsyncIterator<T>) =>
+      iterator.next().then(result => ({ iterator, result }));
 
     for (const iterator of iterators) {
-      pending.set(iterator, iterator.next());
+      pending.set(iterator, wrapPromise(iterator));
     }
 
     while (pending.size > 0) {
-      const [iterator, result] = await Promise.race(pending);
-      pending.delete(iterator);
+      const settled = await Promise.race([...pending.values()]);
+      pending.delete(settled.iterator);
 
-      if (result.done) {
+      if (settled.result.done) {
         continue;
       }
 
-      yield result.value;
-      pending.set(iterator, iterator.next());
+      yield settled.result.value;
+      pending.set(settled.iterator, wrapPromise(settled.iterator));
     }
   }
 

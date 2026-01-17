@@ -146,13 +146,13 @@ export class ToolDiscovery {
     let toolsRegistered = 0;
 
     for (const server of servers) {
-      if (server.disabled) {
+      if (server.config.disabled) {
         this.logger.debug(`Skipping disabled server: ${server.id}`, 'ToolDiscovery');
         continue;
       }
 
       try {
-        const serverTools = await this.discoverServerTools(server);
+        const serverTools = await this.discoverServerTools(server.config);
         serversDiscovered++;
 
         for (const tool of serverTools) {

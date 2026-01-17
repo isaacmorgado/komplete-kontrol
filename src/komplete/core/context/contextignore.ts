@@ -219,13 +219,14 @@ export class ContextIgnore {
    * @returns Array of matching non-ignored files
    */
   async glob(pattern: string, options: any = {}): Promise<string[]> {
-    const files = await glob(pattern, {
+    const result = await glob(pattern, {
       ...options,
       cwd: this.options.cwd,
       ignore: this.patterns.filter((p) => !p.isNegation).map((p) => p.pattern),
     });
 
-    return files;
+    // glob returns string[] in modern versions
+    return result as unknown as string[];
   }
 
   /**

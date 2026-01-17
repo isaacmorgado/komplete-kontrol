@@ -460,7 +460,7 @@ export class Teams {
   private async selectAgents(
     request: TeamFormationRequest
   ): Promise<AgentProfile[]> {
-    let candidates = Array.from(this.agents.values()).filter((a) => a.available);
+    const candidates = Array.from(this.agents.values()).filter((a) => a.available);
 
     switch (request.strategy) {
       case 'capability_based':
@@ -1022,7 +1022,7 @@ export const AgentProfileSchema = z.object({
   rolePreferences: z.array(z.nativeEnum(AgentRole)),
   available: z.boolean(),
   load: z.number().min(0).max(1),
-  metadata: z.record(z.unknown()),
+  metadata: z.record(z.string(), z.unknown()),
 });
 
 /**

@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { Logger, LoggerLike } from '../../utils/logger';
 import { AgentError } from '../../types';
+import { hash } from '../../types/bun-shim';
 
 /**
  * Supported languages
@@ -1136,8 +1137,8 @@ export class TreeSitterIntegration {
     options: ParseOptions
   ): string {
     const optionsStr = JSON.stringify(options);
-    const hash = Bun.hash(code + language + optionsStr);
-    return `parse_${hash}`;
+    const hashValue = hash(code + language + optionsStr);
+    return `parse_${hashValue}`;
   }
 
   /**

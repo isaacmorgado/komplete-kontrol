@@ -272,7 +272,7 @@ export class OpenAIProvider extends BaseProvider {
    * @param content - Message content
    * @returns OpenAI content format
    */
-  private convertContent(content: Message['content']): string | Array<OpenAI.Chat.ContentBlock> {
+  private convertContent(content: Message['content']): string | Array<OpenAI.Chat.ChatCompletionContentPart> {
     if (typeof content === 'string') {
       return content;
     }

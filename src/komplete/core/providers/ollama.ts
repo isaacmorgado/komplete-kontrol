@@ -158,7 +158,7 @@ export class OllamaProvider extends BaseProvider {
         throw new Error(`Ollama API error: ${response.status} ${errorText}`);
       }
 
-      const data: OllamaCompletionResponse = await response.json();
+      const data = await response.json() as OllamaCompletionResponse;
 
       const content: MessageContent = {
         type: 'text',
@@ -374,9 +374,9 @@ export class OllamaProvider extends BaseProvider {
         throw new Error(`Ollama API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as { models?: Array<{ name: string }> };
 
-      return data.models?.map((m: { name: string }) => m.name) ?? [];
+      return data.models?.map((m) => m.name) ?? [];
     } catch (error) {
       this.logger.warn('Failed to list Ollama models', 'OllamaProvider', { error });
       return [];

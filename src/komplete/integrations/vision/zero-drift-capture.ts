@@ -165,32 +165,34 @@ export class ZeroDriftCapturer {
     options: CaptureOptions
   ): Promise<CaptureResult> {
     // Pause all animations and transitions for stable capture
-    await page.evaluate(() => {
+    // Note: The callback runs in browser context where document/window exist
+    await page.evaluate(`(() => {
       const style = document.createElement('style');
-      style.textContent = `
+      style.textContent = \`
         *, *::before, *::after {
           animation-duration: 0s !important;
           transition-duration: 0s !important;
         }
-      `;
+      \`;
       document.head.appendChild(style);
-    });
+    })()`);
 
     // Small delay to ensure style is applied
     await page.waitForTimeout(100);
 
     // Atomic capture: evaluate runs synchronously in page context
-    const captureData = await page.evaluate(() => {
+    // Using string expression to avoid TypeScript DOM type errors
+    const captureData = await page.evaluate(`(() => {
       // Capture DOM
       const dom = document.documentElement.outerHTML;
 
       // Capture computed styles for key elements
       const elements = document.querySelectorAll('body, body > *');
-      const styles: Record<string, any> = {};
+      const styles = {};
       elements.forEach((el, idx) => {
-        if (el instanceof HTMLElement) {
+        if (el.nodeType === 1) { // Element node
           const computed = window.getComputedStyle(el);
-          styles[`el_${idx}`] = {
+          styles['el_' + idx] = {
             display: computed.display,
             visibility: computed.visibility,
             opacity: computed.opacity,
@@ -203,7 +205,7 @@ export class ZeroDriftCapturer {
         title: document.title,
         styles,
       };
-    });
+    })()`) as { dom: string; title: string; styles: Record<string, unknown> };
 
     // Take screenshot immediately after DOM capture
     const screenshotBuffer = await page.screenshot({
@@ -214,8 +216,12 @@ export class ZeroDriftCapturer {
     // Optional: Capture accessibility tree
     let accessibilityTree: string | undefined;
     if (options.includeAccessibility) {
-      const snapshot = await page.accessibility.snapshot();
-      accessibilityTree = JSON.stringify(snapshot, null, 2);
+      // Cast to access accessibility API (exists but may have typing issues)
+      const accessibilityApi = (page as unknown as { accessibility?: { snapshot: () => Promise<unknown> } }).accessibility;
+      if (accessibilityApi) {
+        const snapshot = await accessibilityApi.snapshot();
+        accessibilityTree = JSON.stringify(snapshot, null, 2);
+      }
     }
 
     // Generate content hash

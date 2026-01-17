@@ -608,7 +608,7 @@ export const ToolExecutionContextSchema = z.object({
   agentId: z.string(),
   taskId: z.string().optional(),
   timestamp: z.date(),
-  context: z.record(z.unknown()).optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

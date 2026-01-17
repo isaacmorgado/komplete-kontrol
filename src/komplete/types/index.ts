@@ -560,10 +560,23 @@ export interface TokenBudgetConfig {
 }
 
 /**
+ * Condensation result with metrics
+ */
+export interface CondensationResult {
+  messages: ContextMessage[];
+  originalCount: number;
+  newCount: number;
+  originalSize: number;
+  newSize: number;
+  tokensRemoved: number;
+  clusters?: ContextMessage[][];
+}
+
+/**
  * Abstract condenser interface
  */
 export interface ICondenser {
-  condense(messages: ContextMessage[], targetSize: number): ContextMessage[];
+  condense(messages: ContextMessage[], targetSize: number): CondensationResult;
   shouldPreserve(message: ContextMessage): boolean;
   updateConfig(config: Partial<CondensationConfig>): void;
   getConfig(): CondensationConfig;

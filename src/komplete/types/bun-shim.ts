@@ -10,6 +10,7 @@
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
+import { createHash } from 'node:crypto';
 import { spawn, type SpawnOptions, type ChildProcess } from 'node:child_process';
 
 /**
@@ -103,6 +104,17 @@ export function spawnProcess(
  */
 export type Timer = ReturnType<typeof setTimeout>;
 
+/**
+ * Hash function (Bun-compatible)
+ * Returns a fast hash of the input data
+ */
+export function hash(data: string | Uint8Array): string {
+  if (isBun()) {
+    return String(Bun!.hash(data));
+  }
+  return createHash('sha256').update(data).digest('hex');
+}
+
 export default {
   isBun,
   readFile,
@@ -110,4 +122,5 @@ export default {
   writeFile,
   fileExists,
   spawnProcess,
+  hash,
 };

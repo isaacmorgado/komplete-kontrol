@@ -350,7 +350,7 @@ export class AnthropicProvider extends BaseProvider {
           return {
             type: 'tool_result',
             tool_use_id: item.tool_use_id,
-            content: this.convertToolResultContent(item.content ?? ''),
+            content: this.convertToolResultContent(item.content ?? { type: 'text', text: '' }),
             is_error: item.is_error,
           };
         }
@@ -387,7 +387,7 @@ export class AnthropicProvider extends BaseProvider {
           {
             type: 'tool_result',
             tool_use_id: content.tool_use_id,
-            content: this.convertToolResultContent(content.content ?? ''),
+            content: this.convertToolResultContent(content.content ?? { type: 'text', text: '' }),
             is_error: content.is_error,
           },
         ];
@@ -399,14 +399,30 @@ export class AnthropicProvider extends BaseProvider {
 
   /**
    * Convert tool result content to Anthropic format
+   * @param content - Tool result content (string, MessageContent, or array)
    */
-  private convertToolResultContent(content: Message['content']): Anthropic.Messages.ToolResultBlockParam['content'] {
+  private convertToolResultContent(content: string | MessageContent | MessageContent[]): Anthropic.Messages.ToolResultBlockParam['content'] {
+    // Handle string content directly
     if (typeof content === 'string') {
       return content;
     }
-    // Convert to text-only array for tool results
-    const blocks = this.convertContent(content);
-    return blocks.filter((b): b is Anthropic.Messages.TextBlockParam => b.type === 'text');
+    // Handle array content
+    if (Array.isArray(content)) {
+      // Map to Anthropic format and filter to text only
+      const textBlocks: Anthropic.Messages.TextBlockParam[] = [];
+      for (const item of content) {
+        if (item.type === 'text') {
+          textBlocks.push({ type: 'text', text: item.text });
+        }
+      }
+      return textBlocks;
+    }
+    // Handle single MessageContent
+    if (content.type === 'text') {
+      return content.text;
+    }
+    // Default fallback
+    return '';
   }
 
   /**

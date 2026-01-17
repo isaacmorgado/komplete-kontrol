@@ -1005,7 +1005,7 @@ export const TaskSchema = z.object({
   dependencies: z.array(z.string()),
   result: z.unknown().optional(),
   error: z.instanceof(Error).optional(),
-  metadata: z.record(z.unknown()),
+  metadata: z.record(z.string(), z.unknown()),
 });
 
 /**

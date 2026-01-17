@@ -10,6 +10,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ContextError } from '../../types';
 import { createLogger, type ContextLogger } from '../../utils/logger';
+import { writeFile } from '../../types/bun-shim';
 
 /**
  * Memory frontmatter metadata
@@ -244,7 +245,7 @@ export class MemoryFileHandler {
 
     await this.withLock(async () => {
       const content = this.serializeMemory(this.memory);
-      await Bun.write(this.config.filePath, content, { createPath: true });
+      await writeFile(this.config.filePath, content);
 
       this.memory.frontmatter.updated = new Date().toISOString();
       this.dirty = false;

@@ -237,7 +237,7 @@ export class ResultHandler {
       { success: result.success, durationMs: result.durationMs }
     );
 
-    let content = result.content;
+    let content: unknown = result.content;
 
     // Extract content if needed
     if (mergedOptions.extractContent) {
@@ -246,7 +246,7 @@ export class ResultHandler {
 
     // Sanitize content
     if (mergedOptions.sanitize) {
-      content = this.sanitizeContent(content, mergedOptions.maxStringLength);
+      content = this.sanitizeContent(content, mergedOptions.maxStringLength ?? 10000);
     }
 
     // Format as string if needed
@@ -283,7 +283,7 @@ export class ResultHandler {
   private extractContent(result: ToolExecutionResult): unknown {
     if (!result.success) {
       return {
-        error: result.error?.message || 'Tool execution failed',
+        error: result.error || 'Tool execution failed',
         isError: true,
       };
     }
@@ -300,7 +300,7 @@ export class ResultHandler {
     }
 
     if (Array.isArray(content)) {
-      return { items: content, count: content.length };
+      return { items: content, count: (content as unknown[]).length };
     }
 
     if (typeof content === 'object') {
@@ -566,14 +566,14 @@ export class ResultHandler {
         }
 
         // Handle non-success result
-        const error = new Error(result.error?.message || 'Tool execution failed');
+        const error = new Error(result.error || 'Tool execution failed');
         const errorResult = this.handleError(error, context, mergedOptions);
 
         if (!errorResult.retry || attempts > mergedOptions.maxRetries) {
           if (mergedOptions.throwOnError) {
             throw new AgentError(
               errorResult.errorMessage || 'Tool execution failed',
-              context?.agentId,
+              context?.agentId ?? 'unknown',
               { attempts, context }
             );
           }
@@ -589,7 +589,7 @@ export class ResultHandler {
           if (mergedOptions.throwOnError) {
             throw new AgentError(
               errorResult.errorMessage || lastError.message,
-              context?.agentId,
+              context?.agentId ?? 'unknown',
               { attempts, context, error: lastError }
             );
           }
@@ -603,13 +603,13 @@ export class ResultHandler {
             );
             return {
               success: false,
-              error: { message: lastError.message },
+              error: lastError.message,
               content: errorResult.fallback,
               serverId: context?.agentId || 'unknown',
               toolName: 'unknown',
               attempts,
               durationMs: 0,
-            } as T;
+            } as unknown as T;
           }
 
           throw lastError;
@@ -618,14 +618,14 @@ export class ResultHandler {
 
       // Delay before retry
       if (attempts <= mergedOptions.maxRetries) {
-        await this.delay(mergedOptions.retryDelayMs);
+        await this.delay(mergedOptions.retryDelayMs ?? 1000);
       }
     }
 
     // Should not reach here, but just in case
     throw new AgentError(
       `Tool execution failed after ${attempts} attempts`,
-      context?.agentId,
+      context?.agentId ?? 'unknown',
       { attempts, context, error: lastError }
     );
   }

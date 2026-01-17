@@ -132,7 +132,6 @@ export class TaskPlanner {
     const subtasks = await this.decomposeTask(task, {
       maxDepth,
       maxSubtasks,
-      strategy,
     });
 
     // Analyze dependencies
@@ -193,9 +192,11 @@ export class TaskPlanner {
     }
 
     // Decompose based on task complexity
+    const effectiveMaxSubtasks = maxSubtasks ?? 5;
+    const effectiveMaxDepth = maxDepth ?? 3;
     const numSubtasks = Math.min(
       this.getSubtaskCount(task.complexity),
-      maxSubtasks
+      effectiveMaxSubtasks
     );
 
     for (let i = 0; i < numSubtasks; i++) {
@@ -209,16 +210,16 @@ export class TaskPlanner {
         complexity: this.reduceComplexity(task.complexity),
         priority: task.priority,
         status: 'pending',
-        estimatedDuration: Math.ceil(task.estimatedDuration / numSubtasks),
+        estimatedDuration: Math.ceil((task.estimatedDuration ?? 1000) / numSubtasks),
       };
 
       subtasks.push(subtask);
 
       // Recursively decompose if depth allows
-      if (maxDepth > 1 && subtask.complexity !== 'simple') {
+      if (effectiveMaxDepth > 1 && subtask.complexity !== 'simple') {
         const nestedSubtasks = await this.decomposeTask(subtask, {
-          maxDepth: maxDepth - 1,
-          maxSubtasks: Math.max(2, Math.floor(maxSubtasks / numSubtasks)),
+          maxDepth: effectiveMaxDepth - 1,
+          maxSubtasks: Math.max(2, Math.floor(effectiveMaxSubtasks / numSubtasks)),
         });
         subtasks.push(...nestedSubtasks);
       }

@@ -147,9 +147,10 @@ export class TaskExecutor {
 
     try {
       // Execute with timeout
+      const timeout = options.timeout ?? this.config.defaultTimeout ?? 30000;
       const result = await this.executeWithTimeout(
         task,
-        options.timeout ?? this.config.defaultTimeout,
+        timeout,
         options
       );
 

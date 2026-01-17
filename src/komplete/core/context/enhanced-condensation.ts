@@ -16,20 +16,11 @@ import type {
   SemanticConfig,
   MessageContent,
   TextContent,
+  CondensationResult,
 } from '../../types';
 
-/**
- * Condensation result
- */
-export interface CondensationResult {
-  messages: ContextMessage[];
-  originalCount: number;
-  newCount: number;
-  originalSize: number;
-  newSize: number;
-  tokensRemoved: number;
-  clusters?: ContextMessage[][];
-}
+// Re-export CondensationResult for backwards compatibility
+export type { CondensationResult } from '../../types';
 
 /**
  * Abstract condenser base class

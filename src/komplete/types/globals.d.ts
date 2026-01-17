@@ -94,6 +94,7 @@ declare namespace Bun {
   function spawn(cmd: string[], options?: BunSpawnOptions): BunSubprocess;
   function spawn(options: BunSpawnOptionsOld): BunSubprocess;
   function sleep(ms: number): Promise<void>;
+  function hash(data: string | Uint8Array, seed?: number): number;
 
   const version: string;
   const revision: string;

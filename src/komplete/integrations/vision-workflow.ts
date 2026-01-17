@@ -43,7 +43,7 @@ export interface WebPageAnalysisOptions {
   /** HAR file path for network analysis (optional) */
   harFilePath?: string;
   /** Network analysis options */
-  networkAnalysis?: Partial<AnalysisOptions>;
+  networkAnalysis?: Record<string, unknown>;
 }
 
 /**
@@ -204,7 +204,7 @@ export class VisionWorkflow {
     const network = await this.networkAnalyzer.analyze(harData);
 
     this.logger.info('Capture with network workflow completed', 'VisionWorkflow', {
-      totalRequests: network.metrics.totalRequests,
+      totalRequests: network.metadata.entriesAnalyzed,
       apis: network.endpoints.length,
     });
 

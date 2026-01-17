@@ -176,8 +176,14 @@ export class ScreenshotToCodeConverter {
     const systemPrompt = SYSTEM_PROMPTS[options.stack];
 
     // Call AI provider with vision
+    const model = options.model || 'claude-sonnet-4-20250514';
     const result = await this.provider.complete(
+      model,
       [
+        {
+          role: 'system',
+          content: [{ type: 'text', text: systemPrompt }],
+        },
         {
           role: 'user',
           content: [
@@ -199,15 +205,17 @@ export class ScreenshotToCodeConverter {
         },
       ],
       {
-        model: options.model,
-        systemPrompt,
         temperature: 0.0, // Deterministic for code generation
         maxTokens: 4096,
       }
     );
 
     // Extract code from response
-    const code = this.extractCode(result.content);
+    const responseContent = result.content;
+    const textContent = Array.isArray(responseContent)
+      ? responseContent.find(c => c.type === 'text')
+      : responseContent.type === 'text' ? responseContent : null;
+    const code = this.extractCode(textContent?.type === 'text' ? textContent.text : '');
 
     const durationMs = Date.now() - startTime;
 
@@ -220,12 +228,15 @@ export class ScreenshotToCodeConverter {
     return {
       code,
       stack: options.stack,
-      model: options.model || this.provider.name,
+      model: model,
       metadata: {
         timestamp: Date.now(),
         screenshotSize: screenshot.length,
         durationMs,
-        tokenUsage: result.usage,
+        tokenUsage: result.usage ? {
+          input: result.usage.inputTokens,
+          output: result.usage.outputTokens,
+        } : undefined,
       },
     };
   }
