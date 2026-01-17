@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { AgentError } from '../../types';
 import { CoordinationPattern, type PatternExecutionResult } from './patterns';
 
@@ -320,12 +320,12 @@ export type WorkflowExecutor = (
  * Provides workflow definition and execution for multi-agent systems.
  */
 export class Workflows {
-  private logger: Logger;
+  private logger: LoggerLike;
   private workflows: Map<string, WorkflowConfig> = new Map();
   private executions: Map<string, WorkflowExecutionContext> = new Map();
   private executor: WorkflowExecutor;
 
-  constructor(executor: WorkflowExecutor, logger?: Logger) {
+  constructor(executor: WorkflowExecutor, logger?: LoggerLike) {
     this.executor = executor;
     this.logger = logger || new Logger();
     this.logger.info('Workflows initialized', 'Workflows');

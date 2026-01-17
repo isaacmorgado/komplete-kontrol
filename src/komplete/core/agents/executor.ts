@@ -24,7 +24,7 @@ import type {
   ProviderPrefix,
 } from '../../types';
 import { AgentError } from '../../types';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { getProviderRegistry } from '../providers/registry';
 import { getModelRouter } from '../providers/router';
 import { getMCPRegistry } from '../../mcp/registry';
@@ -236,11 +236,11 @@ export interface ExecutionResult {
  * Implements the agentic loop: LLM call → tool use → tool result → repeat
  */
 export class AgentExecutor {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: AgentExecutorConfig;
   private mcpClients: Map<string, MCPClient> = new Map();
 
-  constructor(config: Partial<AgentExecutorConfig> = {}, logger?: Logger) {
+  constructor(config: Partial<AgentExecutorConfig> = {}, logger?: LoggerLike) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.logger = logger?.child('AgentExecutor') ?? new Logger().child('AgentExecutor');
     this.logger.info('AgentExecutor initialized', 'AgentExecutor', {

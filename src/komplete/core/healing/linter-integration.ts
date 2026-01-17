@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { spawn } from 'bun';
 
 /**
@@ -340,7 +340,7 @@ export interface AutoFixResult {
  * Integrates linters and type checkers for code validation.
  */
 export class LinterIntegration {
-  private logger: Logger;
+  private logger: LoggerLike;
   private options: Required<LinterIntegrationOptions>;
 
   constructor(options: LinterIntegrationOptions = {}) {

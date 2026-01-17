@@ -9,7 +9,7 @@
 
 import type { Page, Browser } from 'playwright';
 import { chromium } from 'playwright';
-import type { Logger } from '../../utils/logger';
+import type { LoggerLike } from '../../utils/logger';
 import { createHash } from 'crypto';
 
 /**
@@ -72,10 +72,10 @@ export interface CaptureOptions {
  * Ensures screenshot and DOM are captured atomically to prevent drift.
  */
 export class ZeroDriftCapturer {
-  private logger: Logger;
+  private logger: LoggerLike;
   private browser: Browser | null = null;
 
-  constructor(logger: Logger) {
+  constructor(logger: LoggerLike) {
     this.logger = logger;
   }
 
@@ -287,6 +287,6 @@ export class ZeroDriftCapturer {
 /**
  * Create a zero-drift capturer instance
  */
-export function createZeroDriftCapturer(logger: Logger): ZeroDriftCapturer {
+export function createZeroDriftCapturer(logger: LoggerLike): ZeroDriftCapturer {
   return new ZeroDriftCapturer(logger);
 }

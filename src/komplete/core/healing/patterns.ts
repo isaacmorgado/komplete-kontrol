@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * Error category
@@ -274,7 +274,7 @@ export interface PatternMatchingOptions {
  * Provides error pattern matching and suggestion generation.
  */
 export class ErrorPatternMatching {
-  private logger: Logger;
+  private logger: LoggerLike;
   private patterns: Map<string, ErrorPattern> = new Map();
   private database: PatternDatabaseEntry[] = [];
   private cacheEnabled: boolean;

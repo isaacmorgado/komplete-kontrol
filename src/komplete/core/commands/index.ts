@@ -15,7 +15,7 @@
  * @module core/commands
  */
 
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { ErrorHandler } from '../../utils/error-handler';
 import { CommandParser } from './parser';
 import { CommandRegistry } from './registry';
@@ -35,7 +35,7 @@ export * from './registry.js';
  * @returns A new CommandRegistry instance
  */
 export function createCommandRegistry(
-  logger: Logger,
+  logger: LoggerLike,
   errorHandler: ErrorHandler,
   parser: CommandParser,
   directories?: Partial<CommandDirectories>

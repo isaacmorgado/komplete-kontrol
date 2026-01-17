@@ -8,7 +8,7 @@
  * - Error hooks: Execute on failure
  */
 
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * Hook type
@@ -124,7 +124,7 @@ export interface HookManagerOptions {
  * Manages hook registration and execution.
  */
 export class HookManager {
-  private logger: Logger;
+  private logger: LoggerLike;
   private hooks = new Map<string, Hook>();
   private executionCount = 0;
   private stateMutex = false;

@@ -7,7 +7,7 @@
  */
 
 import { AgentError } from '../../types';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * Task queue priority
@@ -106,10 +106,10 @@ export class TaskQueue<T> {
   private queue: QueueItem<T>[] = [];
   private processedCount: number = 0;
   private failedCount: number = 0;
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: Required<TaskQueueConfig>;
 
-  constructor(config: TaskQueueConfig = {}, logger?: Logger) {
+  constructor(config: TaskQueueConfig = {}, logger?: LoggerLike) {
     this.logger = logger || new Logger();
     this.config = {
       maxSize: config.maxSize ?? 1000,
@@ -357,10 +357,10 @@ export interface SharedStateConfig {
 export class SharedState {
   private state: Map<string, StateValue<unknown>> = new Map();
   private history: Array<{ key: string; value: StateValue<unknown> }> = [];
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: Required<SharedStateConfig>;
 
-  constructor(config: SharedStateConfig = {}, logger?: Logger) {
+  constructor(config: SharedStateConfig = {}, logger?: LoggerLike) {
     this.logger = logger || new Logger();
     this.config = {
       name: config.name ?? 'default',
@@ -564,10 +564,10 @@ export class Barrier {
   private resolve: (() => void) | null = null;
   private reject: ((error: Error) => void) | null = null;
   private timeoutHandle: NodeJS.Timeout | null = null;
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: Required<BarrierConfig>;
 
-  constructor(expected: number, config: BarrierConfig = {}, logger?: Logger) {
+  constructor(expected: number, config: BarrierConfig = {}, logger?: LoggerLike) {
     this.expected = expected;
     this.logger = logger || new Logger();
     this.config = {
@@ -692,10 +692,10 @@ export interface SemaphoreConfig {
 export class Semaphore {
   private permits: number;
   private queue: Array<{ resolve: (permit: boolean) => void }> = [];
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: Required<SemaphoreConfig>;
 
-  constructor(permits: number, config: SemaphoreConfig = {}, logger?: Logger) {
+  constructor(permits: number, config: SemaphoreConfig = {}, logger?: LoggerLike) {
     this.permits = permits;
     this.logger = logger || new Logger();
     this.config = {
@@ -787,9 +787,9 @@ export class AgentCoordinationManager {
   private states: Map<string, SharedState> = new Map();
   private barriers: Map<string, Barrier> = new Map();
   private semaphores: Map<string, Semaphore> = new Map();
-  private logger: Logger;
+  private logger: LoggerLike;
 
-  constructor(logger?: Logger) {
+  constructor(logger?: LoggerLike) {
     this.logger = logger || new Logger();
     this.logger.info('AgentCoordinationManager initialized', 'AgentCoordinationManager');
   }
@@ -933,7 +933,7 @@ let globalAgentCoordinationManager: AgentCoordinationManager | null = null;
  * @param logger - Optional logger instance
  * @returns The global agent coordination manager
  */
-export function initAgentCoordinationManager(logger?: Logger): AgentCoordinationManager {
+export function initAgentCoordinationManager(logger?: LoggerLike): AgentCoordinationManager {
   globalAgentCoordinationManager = new AgentCoordinationManager(logger);
   return globalAgentCoordinationManager;
 }

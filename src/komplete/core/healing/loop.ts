@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { ErrorPatternMatching, getErrorPatternMatching } from './patterns';
 import { AutoSuggestionSystem, getAutoSuggestionSystem } from './suggestions';
 import { FixValidation, getFixValidation } from './validation';
@@ -392,7 +392,7 @@ export interface LoopOptions {
  * Provides the self-healing loop for automatic code fixing.
  */
 export class SelfHealingLoop {
-  private logger: Logger;
+  private logger: LoggerLike;
   private patternMatching: ErrorPatternMatching;
   private suggestionSystem: AutoSuggestionSystem;
   private fixValidation: FixValidation;

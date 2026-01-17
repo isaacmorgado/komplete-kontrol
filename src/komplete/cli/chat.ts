@@ -11,7 +11,7 @@
 import { createInterface, type Interface } from 'readline';
 import chalk from 'chalk';
 import ora, { type Ora } from 'ora';
-import type { Logger } from '../utils/logger';
+import type { LoggerLike } from '../utils/logger';
 import type { ConfigManager } from '../config';
 import type { SessionManager } from '../core/context/session';
 import type { ModelRouter } from '../core/providers/router';
@@ -33,7 +33,7 @@ export interface ChatOptions {
  * Chat interface configuration
  */
 export interface ChatConfig {
-  logger: Logger;
+  logger: LoggerLike;
   configManager: ConfigManager;
   sessionManager: SessionManager;
   modelRouter: ModelRouter;

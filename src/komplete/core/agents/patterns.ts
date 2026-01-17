@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { AgentError } from '../../types';
 import type { AgentMessage } from './communication';
 
@@ -266,11 +266,11 @@ export interface PatternExecutionResult {
  * Provides advanced coordination patterns for multi-agent systems.
  */
 export class CoordinationPatterns {
-  private logger: Logger;
+  private logger: LoggerLike;
   private patterns: Map<string, PatternConfig> = new Map();
   private executions: Map<string, PatternExecutionResult> = new Map();
 
-  constructor(logger?: Logger) {
+  constructor(logger?: LoggerLike) {
     this.logger = logger || new Logger();
     this.logger.info('CoordinationPatterns initialized', 'CoordinationPatterns');
   }
@@ -727,7 +727,7 @@ let globalCoordinationPatterns: CoordinationPatterns | null = null;
  * @param logger - Optional logger instance
  * @returns The global coordination patterns
  */
-export function initCoordinationPatterns(logger?: Logger): CoordinationPatterns {
+export function initCoordinationPatterns(logger?: LoggerLike): CoordinationPatterns {
   globalCoordinationPatterns = new CoordinationPatterns(logger);
   return globalCoordinationPatterns;
 }

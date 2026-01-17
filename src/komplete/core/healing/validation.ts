@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * Validation result
@@ -264,7 +264,7 @@ export interface RollbackResult {
  * Provides fix validation logic with test execution and rollback.
  */
 export class FixValidation {
-  private logger: Logger;
+  private logger: LoggerLike;
   private backups: Map<string, string> = new Map();
   private validationHistory: Map<string, ValidationResult[]> = new Map();
   private cacheEnabled: boolean;

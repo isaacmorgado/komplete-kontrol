@@ -4,7 +4,7 @@
  * Provides embeddings generation using OpenAI and Ollama providers.
  */
 
-import { Logger } from '../../../utils/logger';
+import { Logger, LoggerLike } from '../../../utils/logger';
 
 /**
  * Embeddings request
@@ -132,10 +132,10 @@ const DEFAULT_CONFIG: EmbeddingsConfig = {
  */
 export class OpenAIEmbeddings implements EmbeddingsProvider {
   name = 'openai';
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: EmbeddingsConfig;
 
-  constructor(config: EmbeddingsConfig = {}, logger?: Logger) {
+  constructor(config: EmbeddingsConfig = {}, logger?: LoggerLike) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.logger = logger?.child('OpenAIEmbeddings') ?? new Logger().child('OpenAIEmbeddings');
   }
@@ -240,10 +240,10 @@ export class OpenAIEmbeddings implements EmbeddingsProvider {
  */
 export class OllamaEmbeddings implements EmbeddingsProvider {
   name = 'ollama';
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: EmbeddingsConfig;
 
-  constructor(config: EmbeddingsConfig = {}, logger?: Logger) {
+  constructor(config: EmbeddingsConfig = {}, logger?: LoggerLike) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.logger = logger?.child('OllamaEmbeddings') ?? new Logger().child('OllamaEmbeddings');
   }
@@ -358,13 +358,13 @@ export class OllamaEmbeddings implements EmbeddingsProvider {
  * Routes embedding requests to appropriate provider with graceful degradation.
  */
 export class EmbeddingsManager {
-  private logger: Logger;
+  private logger: LoggerLike;
   private openai: OpenAIEmbeddings;
   private ollama: OllamaEmbeddings;
   private defaultProvider: 'openai' | 'ollama';
   private config: EmbeddingsConfig;
 
-  constructor(config: EmbeddingsConfig = {}, logger?: Logger) {
+  constructor(config: EmbeddingsConfig = {}, logger?: LoggerLike) {
     this.logger = logger?.child('EmbeddingsManager') ?? new Logger().child('EmbeddingsManager');
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.openai = new OpenAIEmbeddings(this.config, this.logger);

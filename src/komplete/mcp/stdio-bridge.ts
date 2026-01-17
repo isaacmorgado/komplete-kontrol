@@ -6,7 +6,7 @@
  */
 
 import { spawn, type ChildProcess } from 'child_process';
-import { Logger } from '../utils/logger';
+import { Logger, LoggerLike } from '../utils/logger';
 import {
   MCPJSONRPCMessage,
   MCPInitializeRequest,
@@ -28,7 +28,7 @@ export interface StdioBridgeConfig {
   serverId: string;
   config: MCPServerConfig;
   timeout?: number;
-  logger?: Logger;
+  logger?: LoggerLike;
 }
 
 /**
@@ -41,7 +41,7 @@ export type MessageHandler = (message: MCPJSONRPCMessage) => void;
  */
 export class StdioBridge {
   private config: StdioBridgeConfig;
-  private logger: Logger;
+  private logger: LoggerLike;
   private process: ChildProcess | null = null;
   private messageId: number = 0;
   private pendingRequests: Map<string | number, {

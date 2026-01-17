@@ -9,7 +9,7 @@
  * - Notes and reminders
  */
 
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * Memory section
@@ -55,7 +55,7 @@ export interface MemoryUpdateOptions {
  * Manages .memory.md file for institutional memory.
  */
 export class MemoryFileManager {
-  private logger: Logger;
+  private logger: LoggerLike;
   private filePath: string;
   private memory: MemoryFile | null = null;
 

@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../utils/logger';
+import { Logger, LoggerLike } from '../utils/logger';
 import { AgentError } from '../types';
 import { getMCPRegistry } from './registry';
 import { MCPClient, createMCPClient } from './client';
@@ -150,11 +150,11 @@ interface ParameterTransformationRule {
  */
 export class AgentExecutor {
   private config: Required<ToolExecutionOptions>;
-  private logger: Logger;
+  private logger: LoggerLike;
   private clients: Map<string, MCPClient> = new Map();
   private transformationRules: ParameterTransformationRule[] = [];
 
-  constructor(config: ToolExecutionOptions = {}, logger?: Logger) {
+  constructor(config: ToolExecutionOptions = {}, logger?: LoggerLike) {
     this.config = {
       validateParams: config.validateParams ?? true,
       transformParams: config.transformParams ?? true,
@@ -625,7 +625,7 @@ let globalAgentExecutor: AgentExecutor | null = null;
  */
 export function initAgentExecutor(
   config?: ToolExecutionOptions,
-  logger?: Logger
+  logger?: LoggerLike
 ): AgentExecutor {
   globalAgentExecutor = new AgentExecutor(config, logger);
   return globalAgentExecutor;

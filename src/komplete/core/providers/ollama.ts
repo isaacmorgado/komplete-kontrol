@@ -14,7 +14,7 @@ import type {
   TextContent,
 } from '../../types';
 import { BaseProvider, BaseProviderConfig } from './base';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * Ollama provider configuration
@@ -67,7 +67,7 @@ interface OllamaStreamChunk {
 export class OllamaProvider extends BaseProvider {
   private baseUrl: string;
 
-  constructor(config: OllamaConfig, logger?: Logger) {
+  constructor(config: OllamaConfig, logger?: LoggerLike) {
     super(config, logger);
     this.baseUrl = config.baseUrl.replace(/\/$/, ''); // Remove trailing slash
 

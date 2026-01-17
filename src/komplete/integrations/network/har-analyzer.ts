@@ -8,7 +8,7 @@
  * - Network dependencies
  */
 
-import type { Logger } from '../../utils/logger';
+import type { LoggerLike } from '../../utils/logger';
 
 /**
  * HAR entry (simplified)
@@ -143,9 +143,9 @@ export interface AnalysisResult {
  * HAR Network Analyzer
  */
 export class HARAnalyzer {
-  private logger: Logger;
+  private logger: LoggerLike;
 
-  constructor(logger: Logger) {
+  constructor(logger: LoggerLike) {
     this.logger = logger;
   }
 
@@ -398,6 +398,6 @@ export class HARAnalyzer {
 /**
  * Create HAR analyzer instance
  */
-export function createHARAnalyzer(logger: Logger): HARAnalyzer {
+export function createHARAnalyzer(logger: LoggerLike): HARAnalyzer {
   return new HARAnalyzer(logger);
 }

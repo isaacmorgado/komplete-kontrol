@@ -7,7 +7,7 @@
 
 import type { AgentDefinition } from '../../types';
 import { AgentError } from '../../types';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * Agent registration options
@@ -98,9 +98,9 @@ export interface AgentStatistics {
  */
 export class AgentRegistry {
   private agents: Map<string, AgentRecord> = new Map();
-  private logger: Logger;
+  private logger: LoggerLike;
 
-  constructor(logger?: Logger) {
+  constructor(logger?: LoggerLike) {
     this.logger = logger || new Logger();
     this.logger.info('AgentRegistry initialized', 'AgentRegistry');
   }
@@ -485,7 +485,7 @@ let globalAgentRegistry: AgentRegistry | null = null;
  * @param logger - Optional logger instance
  * @returns The global agent registry
  */
-export function initAgentRegistry(logger?: Logger): AgentRegistry {
+export function initAgentRegistry(logger?: LoggerLike): AgentRegistry {
   globalAgentRegistry = new AgentRegistry(logger);
   return globalAgentRegistry;
 }

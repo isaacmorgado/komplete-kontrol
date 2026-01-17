@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { TreeSitterIntegration, ParseResult, NodeType, ASTNode } from './tree-sitter';
 
 /**
@@ -355,7 +355,7 @@ export interface StructureAnalysisOptions {
  * Provides file structure analysis and symbol extraction.
  */
 export class CodeStructureUnderstanding {
-  private logger: Logger;
+  private logger: LoggerLike;
   private treeSitter: TreeSitterIntegration;
   private structures: Map<string, FileStructure> = new Map();
   private dependencies: Map<string, Dependency[]> = new Map();

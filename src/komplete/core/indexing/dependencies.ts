@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { Dependency, DependencyType } from './structure';
 
 /**
@@ -270,7 +270,7 @@ export interface GraphQueryOptions {
  * Provides building and querying dependency graphs.
  */
 export class DependencyGraphQueries {
-  private logger: Logger;
+  private logger: LoggerLike;
   private graphs: Map<string, DependencyGraph> = new Map();
   private activeGraphId: string | null = null;
   private cacheEnabled: boolean;

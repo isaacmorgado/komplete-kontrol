@@ -8,7 +8,7 @@
 
 import type { ProviderPrefix, AIProvider } from '../../types';
 import { ProviderError } from '../../types';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { getProviderRegistry } from './registry';
 
 /**
@@ -34,10 +34,10 @@ export interface RouterConfig {
  * Routes model strings to the appropriate provider based on prefix.
  */
 export class ModelRouter {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: RouterConfig;
 
-  constructor(config: RouterConfig = {}, logger?: Logger) {
+  constructor(config: RouterConfig = {}, logger?: LoggerLike) {
     this.logger = logger ?? new Logger().child('ModelRouter');
     this.config = config;
   }
@@ -203,7 +203,7 @@ let globalModelRouter: ModelRouter | null = null;
  * @param logger - Logger instance
  * @returns Model router instance
  */
-export function initModelRouter(config?: RouterConfig, logger?: Logger): ModelRouter {
+export function initModelRouter(config?: RouterConfig, logger?: LoggerLike): ModelRouter {
   globalModelRouter = new ModelRouter(config ?? {}, logger);
   return globalModelRouter;
 }

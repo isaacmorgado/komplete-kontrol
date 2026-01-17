@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../utils/logger';
+import { Logger, LoggerLike } from '../utils/logger';
 import { getMCPRegistry } from './registry';
 import { MCPClient, createMCPClient } from './client';
 import type { MCPTool, MCPServerConfig } from './types';
@@ -109,12 +109,12 @@ export interface ToolDiscoveryResult {
  */
 export class ToolDiscovery {
   private config: Required<ToolDiscoveryConfig>;
-  private logger: Logger;
+  private logger: LoggerLike;
   private discoveredTools: Map<string, DiscoveredTool> = new Map();
   private clients: Map<string, MCPClient> = new Map();
   private refreshTimer: Timer | null = null;
 
-  constructor(config: ToolDiscoveryConfig = {}, logger?: Logger) {
+  constructor(config: ToolDiscoveryConfig = {}, logger?: LoggerLike) {
     this.config = {
       autoDiscover: config.autoDiscover ?? true,
       refreshIntervalMs: config.refreshIntervalMs ?? 600000, // 10 minutes

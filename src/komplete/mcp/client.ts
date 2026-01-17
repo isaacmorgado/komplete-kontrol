@@ -5,7 +5,7 @@
  * Manages connections, tool discovery, and tool execution.
  */
 
-import { Logger } from '../utils/logger';
+import { Logger, LoggerLike } from '../utils/logger';
 import { getMCPRegistry } from './registry';
 import {
   StdioBridge,
@@ -26,12 +26,12 @@ import {
  */
 export class MCPClient {
   private config: MCPClientConfig;
-  private logger: Logger;
+  private logger: LoggerLike;
   private bridge: StdioBridge | null = null;
   private tools: MCPTool[] = [];
   private connected: boolean = false;
 
-  constructor(config: MCPClientConfig, logger?: Logger) {
+  constructor(config: MCPClientConfig, logger?: LoggerLike) {
     this.config = config;
     this.logger = logger || new Logger();
   }
@@ -337,7 +337,7 @@ export class MCPClient {
  */
 export function createMCPClient(
   config: MCPClientConfig,
-  logger?: Logger
+  logger?: LoggerLike
 ): MCPClient {
   return new MCPClient(config, logger);
 }
@@ -354,7 +354,7 @@ export function createMCPClient(
 export async function connectToMCPServer(
   serverId: string,
   timeout?: number,
-  logger?: Logger
+  logger?: LoggerLike
 ): Promise<MCPClient> {
   const client = createMCPClient({ serverId, timeout }, logger);
   await client.connect();

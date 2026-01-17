@@ -231,7 +231,10 @@ export interface AIProvider {
   id?: string;
   name: string;
   prefix: ProviderPrefix;
+  /** Provider capabilities - can be accessed via getter */
   capabilities: ProviderCapabilities;
+  /** Get provider capabilities (alternative to direct property access) */
+  getCapabilities?(): ProviderCapabilities;
   complete(model: string, messages: Message[], options?: CompletionOptions): Promise<CompletionResult>;
   stream(model: string, messages: Message[], options?: CompletionOptions): AsyncGenerator<StreamChunk>;
   countTokens(messages: Message[]): Promise<number>;

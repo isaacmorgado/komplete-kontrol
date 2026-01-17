@@ -8,7 +8,7 @@
  * - Result validation
  */
 
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import type { TaskExecutionResult } from './executor';
 
 /**
@@ -70,9 +70,9 @@ export interface AggregationOptions {
  * - Metadata tracking
  */
 export class TaskResultAggregator {
-  private logger: Logger;
+  private logger: LoggerLike;
 
-  constructor(logger?: Logger) {
+  constructor(logger?: LoggerLike) {
     this.logger = logger?.child('TaskResultAggregator') ?? new Logger().child('TaskResultAggregator');
   }
 

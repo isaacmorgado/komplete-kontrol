@@ -8,7 +8,7 @@
  * - Execution planning
  */
 
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import type { Task, TaskPriority, TaskStatus } from '../../types';
 
 /**
@@ -86,12 +86,12 @@ export interface TaskPlannerConfig {
  * - Task-to-subtask conversion with validation
  */
 export class TaskPlanner {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: TaskPlannerConfig;
   private taskCounter = 0;
   private planCache = new Map<string, TaskPlan>();
 
-  constructor(config?: TaskPlannerConfig, logger?: Logger) {
+  constructor(config?: TaskPlannerConfig, logger?: LoggerLike) {
     this.config = {
       maxConcurrentTasks: 5,
       defaultTimeout: 30000,

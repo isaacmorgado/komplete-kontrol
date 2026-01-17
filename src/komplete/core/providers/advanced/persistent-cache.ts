@@ -6,7 +6,7 @@
  */
 
 import { Database } from 'bun:sqlite';
-import { Logger } from '../../../utils/logger';
+import { Logger, LoggerLike } from '../../../utils/logger';
 import type { CompletionResult, Message } from '../../../types';
 import { createHash } from 'crypto';
 
@@ -162,7 +162,7 @@ export interface PersistentCacheStats {
  * SQLite-backed cache with optional L1 memory cache.
  */
 export class PersistentResponseCache {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: PersistentCacheConfig;
   private db: Database;
   private memoryCache: Map<string, { result: CompletionResult; expiresAt: number }> = new Map();
@@ -170,7 +170,7 @@ export class PersistentResponseCache {
   private misses: number = 0;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
-  constructor(config: Partial<PersistentCacheConfig> = {}, logger?: Logger) {
+  constructor(config: Partial<PersistentCacheConfig> = {}, logger?: LoggerLike) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.logger = logger?.child('PersistentResponseCache') ?? new Logger().child('PersistentResponseCache');
 

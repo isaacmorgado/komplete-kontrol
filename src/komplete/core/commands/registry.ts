@@ -8,7 +8,7 @@
 import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { Logger } from '../../utils/logger.js';
+import { Logger, LoggerLike } from '../../utils/logger.js';
 import { ErrorHandler } from '../../utils/error-handler.js';
 import { CommandParser } from './parser.js';
 import type {
@@ -27,7 +27,7 @@ import type {
  * Manages loading and retrieving slash commands from multiple sources.
  */
 export class CommandRegistry {
-  private logger: Logger;
+  private logger: LoggerLike;
   private errorHandler: ErrorHandler;
   private parser: CommandParser;
   private directories: CommandDirectories;
@@ -35,7 +35,7 @@ export class CommandRegistry {
   private initialized: boolean;
 
   constructor(
-    logger: Logger,
+    logger: LoggerLike,
     errorHandler: ErrorHandler,
     parser: CommandParser,
     directories?: Partial<CommandDirectories>
@@ -361,7 +361,7 @@ export class CommandRegistry {
  * @returns Command registry instance
  */
 export function createCommandRegistry(
-  logger: Logger,
+  logger: LoggerLike,
   errorHandler: ErrorHandler,
   parser: CommandParser,
   directories?: Partial<CommandDirectories>

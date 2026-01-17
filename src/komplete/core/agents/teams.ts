@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { AgentError } from '../../types';
 import { AgentRole, CoordinationPattern, type TeamConfig } from './patterns';
 import type { AgentMessage } from './communication';
@@ -212,14 +212,14 @@ export interface TeamFormationResult {
  * Provides dynamic team composition and role-based team assignment.
  */
 export class Teams {
-  private logger: Logger;
+  private logger: LoggerLike;
   private agents: Map<string, AgentProfile> = new Map();
   private teams: Map<string, TeamConfig> = new Map();
   private teamMembers: Map<string, TeamMember[]> = new Map();
   private channels: Map<string, TeamChannel> = new Map();
   private agentChannels: Map<string, Set<string>> = new Map();
 
-  constructor(logger?: Logger) {
+  constructor(logger?: LoggerLike) {
     this.logger = logger || new Logger();
     this.logger.info('Teams initialized', 'Teams');
   }
@@ -1049,7 +1049,7 @@ let globalTeams: Teams | null = null;
  * @param logger - Optional logger instance
  * @returns The global teams
  */
-export function initTeams(logger?: Logger): Teams {
+export function initTeams(logger?: LoggerLike): Teams {
   globalTeams = new Teams(logger);
   return globalTeams;
 }

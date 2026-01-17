@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import type { ExecutionResult, ErrorInfo } from './loop';
 
 /**
@@ -205,7 +205,7 @@ export interface REPLResult {
  * Provides interactive REPL for code execution with supervision.
  */
 export class REPLInterface {
-  private logger: Logger;
+  private logger: LoggerLike;
   private state: REPLState;
   private options: Required<REPLOptions>;
   private commands: Map<string, REPLCommand> = new Map();

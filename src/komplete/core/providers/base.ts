@@ -16,7 +16,7 @@ import type {
   Tool,
 } from '../../types';
 import { ProviderError } from '../../types';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * Base provider configuration
@@ -39,19 +39,21 @@ export interface BaseProviderConfig {
  * @abstract
  */
 export abstract class BaseProvider implements AIProvider {
-  protected logger: Logger;
+  protected logger: LoggerLike;
   protected config: BaseProviderConfig;
-  protected capabilities: ProviderCapabilities;
+  /** Provider capabilities - public to satisfy AIProvider interface */
+  public capabilities: ProviderCapabilities;
 
   /**
    * Create a new base provider instance
    *
    * @param config - Provider configuration
    * @param logger - Logger instance
+   * @param providerName - Provider name for logging context
    */
-  constructor(config: BaseProviderConfig, logger?: Logger) {
+  constructor(config: BaseProviderConfig, logger?: LoggerLike, providerName: string = 'BaseProvider') {
     this.config = config;
-    this.logger = logger?.child(this.name) ?? new Logger().child(this.name);
+    this.logger = logger?.child(providerName) ?? new Logger().child(providerName);
     this.capabilities = this.initializeCapabilities();
   }
 
@@ -131,6 +133,7 @@ export abstract class BaseProvider implements AIProvider {
       throw new ProviderError(
         'API key is required for this provider',
         this.name,
+        'AUTH_ERROR',
         { provider: this.name }
       );
     }
@@ -155,6 +158,7 @@ export abstract class BaseProvider implements AIProvider {
       throw new ProviderError(
         'Messages array cannot be empty',
         this.name,
+        'VALIDATION_ERROR',
         { messages }
       );
     }
@@ -164,6 +168,7 @@ export abstract class BaseProvider implements AIProvider {
         throw new ProviderError(
           'Each message must have role and content',
           this.name,
+          'VALIDATION_ERROR',
           { message: msg }
         );
       }
@@ -185,6 +190,7 @@ export abstract class BaseProvider implements AIProvider {
       throw new ProviderError(
         'maxTokens must be greater than 0',
         this.name,
+        'VALIDATION_ERROR',
         { maxTokens: options.maxTokens }
       );
     }
@@ -193,6 +199,7 @@ export abstract class BaseProvider implements AIProvider {
       throw new ProviderError(
         'temperature must be between 0 and 2',
         this.name,
+        'VALIDATION_ERROR',
         { temperature: options.temperature }
       );
     }
@@ -201,6 +208,7 @@ export abstract class BaseProvider implements AIProvider {
       throw new ProviderError(
         'topP must be between 0 and 1',
         this.name,
+        'VALIDATION_ERROR',
         { topP: options.topP }
       );
     }
@@ -209,6 +217,7 @@ export abstract class BaseProvider implements AIProvider {
       throw new ProviderError(
         'This provider does not support tools',
         this.name,
+        'CAPABILITY_ERROR',
         { provider: this.name }
       );
     }
@@ -278,6 +287,7 @@ export abstract class BaseProvider implements AIProvider {
       throw new ProviderError(
         error.message,
         this.name,
+        'PROVIDER_ERROR',
         {
           originalError: error.name,
           stack: error.stack,
@@ -288,6 +298,7 @@ export abstract class BaseProvider implements AIProvider {
     throw new ProviderError(
       String(error),
       this.name,
+      'PROVIDER_ERROR',
       { error }
     );
   }

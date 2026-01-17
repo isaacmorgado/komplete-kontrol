@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { AgentError } from '../../types';
 import type { AgentMessage } from './communication';
 
@@ -341,7 +341,7 @@ export interface TaskDelegationRequest {
  * Provides hierarchical coordination with supervisor-agent relationships.
  */
 export class Hierarchy {
-  private logger: Logger;
+  private logger: LoggerLike;
   private hierarchies: Map<string, HierarchyConfig> = new Map();
   private tasks: Map<string, Task> = new Map();
   private agentCapabilities: Map<string, AgentCapability[]> = new Map();
@@ -349,7 +349,7 @@ export class Hierarchy {
   private reports: Map<string, AgentReport[]> = new Map();
   private roundRobinCounters: Map<string, number> = new Map();
 
-  constructor(logger?: Logger) {
+  constructor(logger?: LoggerLike) {
     this.logger = logger || new Logger();
     this.logger.info('Hierarchy initialized', 'Hierarchy');
   }
@@ -1050,7 +1050,7 @@ let globalHierarchy: Hierarchy | null = null;
  * @param logger - Optional logger instance
  * @returns The global hierarchy
  */
-export function initHierarchy(logger?: Logger): Hierarchy {
+export function initHierarchy(logger?: LoggerLike): Hierarchy {
   globalHierarchy = new Hierarchy(logger);
   return globalHierarchy;
 }

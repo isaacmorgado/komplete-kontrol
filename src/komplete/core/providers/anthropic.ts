@@ -14,7 +14,7 @@ import type {
   TextContent,
 } from '../../types';
 import { BaseProvider, BaseProviderConfig } from './base';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * Anthropic provider configuration
@@ -36,7 +36,7 @@ export class AnthropicProvider extends BaseProvider {
   private client: Anthropic;
   private version: string;
 
-  constructor(config: AnthropicConfig, logger?: Logger) {
+  constructor(config: AnthropicConfig, logger?: LoggerLike) {
     super(config, logger);
     this.version = config.version ?? '2023-06-01';
 

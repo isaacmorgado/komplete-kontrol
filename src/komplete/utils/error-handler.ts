@@ -6,7 +6,7 @@
 
 import chalk from 'chalk';
 import { KompleteError, ProviderError, AgentError, ContextError, ConfigError, ToolError, ModeError } from '../types';
-import { Logger } from './logger';
+import { Logger, LoggerLike } from './logger';
 
 /**
  * Error severity levels
@@ -42,7 +42,7 @@ interface ErrorContext {
  * Error handler configuration
  */
 interface ErrorHandlerConfig {
-  logger?: Logger;
+  logger?: LoggerLike;
   verbose?: boolean;
   exitOnCritical?: boolean;
 }

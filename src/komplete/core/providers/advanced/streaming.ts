@@ -6,7 +6,7 @@
  */
 
 import type { AIProvider, Message, CompletionOptions, StreamChunk } from '../../../types';
-import { Logger } from '../../../utils/logger';
+import { Logger, LoggerLike } from '../../../utils/logger';
 
 /**
  * Stream event type
@@ -74,11 +74,11 @@ interface StreamState {
  * chunk aggregation, and event emission.
  */
 export class StreamingResponseHandler {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: StreamHandlerConfig;
   private activeStreams: Map<string, StreamState> = new Map();
 
-  constructor(config?: Partial<StreamHandlerConfig>, logger?: Logger) {
+  constructor(config?: Partial<StreamHandlerConfig>, logger?: LoggerLike) {
     this.config = {
       buffer: {
         bufferSize: 1024,

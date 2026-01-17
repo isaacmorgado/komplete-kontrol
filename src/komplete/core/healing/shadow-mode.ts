@@ -8,7 +8,7 @@
  * - Enable safe experimentation
  */
 
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import type { ExecutionResult } from './loop';
 
 /**
@@ -87,7 +87,7 @@ export interface ShadowExecutionResult {
  * Manages speculative code execution in the background.
  */
 export class ShadowMode {
-  private logger: Logger;
+  private logger: LoggerLike;
   private activeExecutions = new Map<string, ShadowExecutionResult>();
   private executionHistory: ShadowExecutionResult[] = [];
   private maxHistorySize = 100;

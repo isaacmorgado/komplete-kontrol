@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import type { ErrorInfo } from './loop';
 
 /**
@@ -279,7 +279,7 @@ export interface ErrorPattern {
  * Parses stderr output to extract and categorize errors.
  */
 export class StderrParser {
-  private logger: Logger;
+  private logger: LoggerLike;
   private options: Required<StderrParserOptions>;
   private patterns: ErrorPattern[];
 

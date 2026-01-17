@@ -6,7 +6,7 @@
  */
 
 import { AgentError } from '../../types';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * Message types
@@ -158,7 +158,7 @@ export class AgentCommunicationManager {
   private messageFilters: Map<string, MessageFilter[]> = new Map();
   private pendingRequests: Map<string, PendingRequest> = new Map();
   private messageHistory: AgentMessage[] = [];
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: Required<CommunicationChannelConfig>;
 
   constructor(

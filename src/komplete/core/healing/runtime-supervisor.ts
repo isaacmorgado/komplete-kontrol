@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import type { ExecutionResult, ErrorInfo } from './loop';
 
 /**
@@ -279,7 +279,7 @@ interface ExecutionContext {
  * Supervises code execution with monitoring and anomaly detection.
  */
 export class RuntimeSupervisor {
-  private logger: Logger;
+  private logger: LoggerLike;
   private options: Required<SupervisorOptions>;
   private executions: Map<string, ExecutionContext> = new Map();
   private history: ExecutionMetrics[] = [];

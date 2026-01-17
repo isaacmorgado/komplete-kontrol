@@ -7,7 +7,7 @@
 
 import type { AIProvider, ProviderPrefix } from '../../types';
 import { ProviderError } from '../../types';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * Provider entry in registry
@@ -31,11 +31,11 @@ export interface RegistryConfig {
  * Manages registration and retrieval of AI providers.
  */
 export class ProviderRegistry {
-  private logger: Logger;
+  private logger: LoggerLike;
   private providers: Map<ProviderPrefix, ProviderEntry> = new Map();
   private config: RegistryConfig;
 
-  constructor(config: RegistryConfig = {}, logger?: Logger) {
+  constructor(config: RegistryConfig = {}, logger?: LoggerLike) {
     this.logger = logger ?? new Logger().child('ProviderRegistry');
     this.config = config;
 
@@ -236,7 +236,7 @@ let globalProviderRegistry: ProviderRegistry | null = null;
  * @param logger - Logger instance
  * @returns Provider registry instance
  */
-export function initProviderRegistry(config?: RegistryConfig, logger?: Logger): ProviderRegistry {
+export function initProviderRegistry(config?: RegistryConfig, logger?: LoggerLike): ProviderRegistry {
   globalProviderRegistry = new ProviderRegistry(config ?? {}, logger);
   return globalProviderRegistry;
 }

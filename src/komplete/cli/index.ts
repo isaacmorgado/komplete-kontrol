@@ -7,7 +7,7 @@
 import yargs, { type Argv } from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import chalk from 'chalk';
-import { Logger, LogLevel } from '../utils/logger';
+import { Logger, LogLevel, type LoggerLike } from '../utils/logger';
 import { ConfigManager } from '../config';
 import { handleError, ErrorHandler } from '../utils/error-handler';
 import {
@@ -73,7 +73,7 @@ import * as fs from 'node:fs/promises';
  * CLI configuration
  */
 interface CLIConfig {
-  logger: Logger;
+  logger: LoggerLike;
   configManager: ConfigManager;
   sessionManager?: SessionManager;
   tokenBudget?: TokenBudget;

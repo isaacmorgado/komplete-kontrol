@@ -4,7 +4,7 @@
  * Tracks per-request costs for LLM usage across providers and models.
  */
 
-import { Logger } from '../../../utils/logger';
+import { Logger, LoggerLike } from '../../../utils/logger';
 
 /**
  * Token pricing per 1K tokens
@@ -219,14 +219,14 @@ export interface CostSummary {
  * Tracks and aggregates LLM usage costs.
  */
 export class CostTracker {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: CostTrackerConfig;
   private history: CostEntry[] = [];
   private customPricing: Map<string, TokenPricing> = new Map();
   private totalCost: number = 0;
   private dailyCost: Map<string, number> = new Map();
 
-  constructor(config: Partial<CostTrackerConfig> = {}, logger?: Logger) {
+  constructor(config: Partial<CostTrackerConfig> = {}, logger?: LoggerLike) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.logger = logger?.child('CostTracker') ?? new Logger().child('CostTracker');
 

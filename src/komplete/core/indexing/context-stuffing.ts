@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { DependencyGraphQueries, GraphPath } from './dependencies';
 import { CodeStructureUnderstanding, CodeSymbol, SymbolType } from './structure';
 
@@ -326,7 +326,7 @@ export interface RelevanceFactors {
  * Provides context stuffing based on dependencies and relevance.
  */
 export class SmartContextStuffing {
-  private logger: Logger;
+  private logger: LoggerLike;
   private structure: CodeStructureUnderstanding;
   private graphQueries: DependencyGraphQueries;
   private relevanceFactors: RelevanceFactors;

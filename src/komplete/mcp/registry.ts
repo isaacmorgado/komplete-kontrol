@@ -5,7 +5,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { Logger } from '../utils/logger';
+import { Logger, LoggerLike } from '../utils/logger';
 import { MCPError, MCPServerConfig, MCPServerState, MCPRegistryStats } from './types';
 
 /**
@@ -13,9 +13,9 @@ import { MCPError, MCPServerConfig, MCPServerState, MCPRegistryStats } from './t
  */
 export class MCPRegistry {
   private servers: Map<string, MCPServerState> = new Map();
-  private logger: Logger;
+  private logger: LoggerLike;
 
-  constructor(logger?: Logger) {
+  constructor(logger?: LoggerLike) {
     this.logger = logger || new Logger();
   }
 
@@ -329,6 +329,6 @@ export function setMCPRegistry(registry: MCPRegistry): void {
  * @param logger - Optional logger instance
  * @returns New registry instance
  */
-export function createMCPRegistry(logger?: Logger): MCPRegistry {
+export function createMCPRegistry(logger?: LoggerLike): MCPRegistry {
   return new MCPRegistry(logger);
 }

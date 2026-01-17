@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../utils/logger';
+import { Logger, LoggerLike } from '../utils/logger';
 import { AgentError } from '../types';
 import type { MCPToolResult } from './types';
 import type { ToolExecutionResult, ToolExecutionContext } from './agent-executor';
@@ -185,13 +185,13 @@ export interface ErrorPattern {
 export class ResultHandler {
   private config: Required<ResultTransformationOptions>;
   private errorConfig: Required<ErrorHandlingOptions>;
-  private logger: Logger;
+  private logger: LoggerLike;
   private errorPatterns: ErrorPattern[] = [];
 
   constructor(
     resultConfig?: ResultTransformationOptions,
     errorConfig?: ErrorHandlingOptions,
-    logger?: Logger
+    logger?: LoggerLike
   ) {
     this.config = {
       extractContent: resultConfig?.extractContent ?? true,
@@ -707,7 +707,7 @@ let globalResultHandler: ResultHandler | null = null;
 export function initResultHandler(
   resultConfig?: ResultTransformationOptions,
   errorConfig?: ErrorHandlingOptions,
-  logger?: Logger
+  logger?: LoggerLike
 ): ResultHandler {
   globalResultHandler = new ResultHandler(resultConfig, errorConfig, logger);
   return globalResultHandler;

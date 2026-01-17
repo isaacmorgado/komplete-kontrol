@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { ErrorPatternMatching, ErrorCategory, ErrorSeverity } from './patterns';
 
 /**
@@ -230,7 +230,7 @@ export interface SuggestionFilterOptions {
  * Provides suggestion generation based on errors.
  */
 export class AutoSuggestionSystem {
-  private logger: Logger;
+  private logger: LoggerLike;
   private patternMatching: ErrorPatternMatching;
   private suggestions: Map<string, Suggestion> = new Map();
   private suggestionHistory: Map<string, number> = new Map();

@@ -8,7 +8,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { Logger } from '../../utils/logger.js';
+import { Logger, LoggerLike } from '../../utils/logger.js';
 import { ErrorHandler } from '../../utils/error-handler.js';
 import type {
   CommandFrontmatter,
@@ -23,10 +23,10 @@ import type {
  * Parses markdown files with YAML frontmatter into executable commands.
  */
 export class CommandParser {
-  private logger: Logger;
+  private logger: LoggerLike;
   private errorHandler: ErrorHandler;
 
-  constructor(logger: Logger, errorHandler: ErrorHandler) {
+  constructor(logger: LoggerLike, errorHandler: ErrorHandler) {
     this.logger = logger;
     this.errorHandler = errorHandler;
   }
@@ -275,7 +275,7 @@ export class CommandParser {
  * @returns Command parser instance
  */
 export function createCommandParser(
-  logger: Logger,
+  logger: LoggerLike,
   errorHandler: ErrorHandler
 ): CommandParser {
   return new CommandParser(logger, errorHandler);

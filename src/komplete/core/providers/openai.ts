@@ -14,7 +14,7 @@ import type {
   TextContent,
 } from '../../types';
 import { BaseProvider, BaseProviderConfig } from './base';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 
 /**
  * OpenAI provider configuration
@@ -36,7 +36,7 @@ export class OpenAIProvider extends BaseProvider {
   private client: OpenAI;
   private organizationId?: string;
 
-  constructor(config: OpenAIConfig, logger?: Logger) {
+  constructor(config: OpenAIConfig, logger?: LoggerLike) {
     super(config, logger);
     this.organizationId = config.organizationId;
 

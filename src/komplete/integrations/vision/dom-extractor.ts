@@ -5,7 +5,7 @@
  * Scores elements based on content richness, semantic value, and accessibility.
  */
 
-import type { Logger } from '../../utils/logger';
+import type { LoggerLike } from '../../utils/logger';
 
 /**
  * Extracted element with quality score
@@ -96,9 +96,9 @@ export interface ExtractionResult {
  * DOM Extractor with Quality Scoring
  */
 export class DOMExtractor {
-  private logger: Logger;
+  private logger: LoggerLike;
 
-  constructor(logger: Logger) {
+  constructor(logger: LoggerLike) {
     this.logger = logger;
   }
 
@@ -394,6 +394,6 @@ export class DOMExtractor {
 /**
  * Create a DOM extractor instance
  */
-export function createDOMExtractor(logger: Logger): DOMExtractor {
+export function createDOMExtractor(logger: LoggerLike): DOMExtractor {
   return new DOMExtractor(logger);
 }

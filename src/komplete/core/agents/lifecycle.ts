@@ -7,7 +7,7 @@
 
 import type { AgentDefinition, AgentTask, AgentTaskResult } from '../../types';
 import { AgentError } from '../../types';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { ErrorHandler } from '../../utils/error-handler';
 import { AgentRegistry, getAgentRegistry } from './registry';
 
@@ -236,7 +236,7 @@ export class AgentLifecycleManager {
   private instances: Map<string, AgentInstance> = new Map();
   private eventHandlers: Map<AgentLifecycleEvent, AgentLifecycleEventHandler[]> =
     new Map();
-  private logger: Logger;
+  private logger: LoggerLike;
   private errorHandler: ErrorHandler;
   private registry: AgentRegistry;
   private config: Required<AgentLifecycleManagerConfig>;

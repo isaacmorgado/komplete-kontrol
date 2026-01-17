@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { AgentError } from '../../types';
 
 /**
@@ -415,7 +415,7 @@ export interface ParseOptions {
  * Provides AST parsing for multiple languages.
  */
 export class TreeSitterIntegration {
-  private logger: Logger;
+  private logger: LoggerLike;
   private parsers: Map<Language, (code: string, options: ParseOptions) => ParseResult> = new Map();
   private cache: Map<string, ParseResult> = new Map();
   private cacheEnabled: boolean;

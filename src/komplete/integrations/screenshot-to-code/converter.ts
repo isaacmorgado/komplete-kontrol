@@ -5,7 +5,7 @@
  * Based on research from abi/screenshot-to-code architecture.
  */
 
-import type { Logger } from '../../utils/logger';
+import type { LoggerLike } from '../../utils/logger';
 import type { AIProvider } from '../../types';
 import type { CaptureResult } from '../vision/zero-drift-capture';
 
@@ -147,10 +147,10 @@ Do not include markdown "\`\`\`" at the start or end.`,
  * Screenshot-to-Code Converter
  */
 export class ScreenshotToCodeConverter {
-  private logger: Logger;
+  private logger: LoggerLike;
   private provider: AIProvider;
 
-  constructor(provider: AIProvider, logger: Logger) {
+  constructor(provider: AIProvider, logger: LoggerLike) {
     this.provider = provider;
     this.logger = logger;
   }
@@ -291,7 +291,7 @@ export class ScreenshotToCodeConverter {
  */
 export function createScreenshotToCodeConverter(
   provider: AIProvider,
-  logger: Logger
+  logger: LoggerLike
 ): ScreenshotToCodeConverter {
   return new ScreenshotToCodeConverter(provider, logger);
 }

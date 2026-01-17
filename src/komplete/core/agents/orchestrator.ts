@@ -7,7 +7,7 @@
  */
 
 import type { AgentDefinition, AgentError, AgentTask, AgentTaskResult } from '../../types';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { ErrorHandler } from '../../utils/error-handler';
 import { AgentRegistry, getAgentRegistry } from './registry';
 import {
@@ -200,7 +200,7 @@ export class AgentOrchestrator {
   private taskQueue: OrchestratedTask[] = [];
   private executingTasks: Set<string> = new Set();
   private roundRobinIndex: number = 0;
-  private logger: Logger;
+  private logger: LoggerLike;
   private errorHandler: ErrorHandler;
   private registry: AgentRegistry;
   private lifecycleManager: AgentLifecycleManager;

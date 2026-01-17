@@ -7,7 +7,7 @@
 
 import type { AIProvider, Message, CompletionOptions, CompletionResult, StreamChunk } from '../../../types';
 import { ProviderError } from '../../../types';
-import { Logger } from '../../../utils/logger';
+import { Logger, LoggerLike } from '../../../utils/logger';
 
 /**
  * Fallback strategy type
@@ -75,12 +75,12 @@ interface RetryAttempt {
  * Supports multiple fallback strategies and configurable retry behavior.
  */
 export class ProviderFallbackManager {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: FallbackManagerConfig;
   private retryHistory: Map<string, RetryAttempt[]> = new Map();
   private providerHealth: Map<string, ProviderHealth> = new Map();
 
-  constructor(config: FallbackManagerConfig, logger?: Logger) {
+  constructor(config: FallbackManagerConfig, logger?: LoggerLike) {
     this.config = config;
     this.logger = logger?.child('ProviderFallbackManager') ?? new Logger().child('ProviderFallbackManager');
     this.initializeProviderHealth();

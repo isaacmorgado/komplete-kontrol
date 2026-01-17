@@ -7,7 +7,7 @@
 
 import type { AIProvider, Message, CompletionOptions, CompletionResult, StreamChunk } from '../../../types';
 import { ProviderError } from '../../../types';
-import { Logger } from '../../../utils/logger';
+import { Logger, LoggerLike } from '../../../utils/logger';
 
 /**
  * Load balancing strategy
@@ -72,14 +72,14 @@ export interface ProviderHealthStatus {
  * and automatic failover capabilities.
  */
 export class ProviderLoadBalancer {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: LoadBalancerConfig;
   private currentRoundRobinIndex: number = 0;
   private providerHealth: Map<string, ProviderHealthStatus> = new Map();
   private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
   private requestCount: Map<string, number> = new Map();
 
-  constructor(config: LoadBalancerConfig, logger?: Logger) {
+  constructor(config: LoadBalancerConfig, logger?: LoggerLike) {
     this.config = config;
     this.logger = logger?.child('ProviderLoadBalancer') ?? new Logger().child('ProviderLoadBalancer');
 

@@ -6,7 +6,7 @@
  */
 
 import type { AIProvider, Message, CompletionOptions, CompletionResult } from '../../../types';
-import { Logger } from '../../../utils/logger';
+import { Logger, LoggerLike } from '../../../utils/logger';
 
 /**
  * Cache key
@@ -79,7 +79,7 @@ export interface InvalidationOptions {
  * and multiple invalidation strategies.
  */
 export class ResponseCache {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: CacheConfig;
   private cache: Map<string, CacheEntry> = new Map();
   private stats: CacheStatistics = {
@@ -92,7 +92,7 @@ export class ResponseCache {
     averageEntrySize: 0,
   };
 
-  constructor(config?: Partial<CacheConfig>, logger?: Logger) {
+  constructor(config?: Partial<CacheConfig>, logger?: LoggerLike) {
     this.config = {
       maxSize: 100 * 1024 * 1024, // 100 MB
       defaultTTL: 5 * 60 * 1000, // 5 minutes
@@ -643,9 +643,9 @@ export class ResponseCache {
 export class CachedProvider implements AIProvider {
   private provider: AIProvider;
   private cache: ResponseCache;
-  private logger: Logger;
+  private logger: LoggerLike;
 
-  constructor(provider: AIProvider, cache: ResponseCache, logger?: Logger) {
+  constructor(provider: AIProvider, cache: ResponseCache, logger?: LoggerLike) {
     this.provider = provider;
     this.cache = cache;
     this.logger = logger?.child('CachedProvider') ?? new Logger().child('CachedProvider');

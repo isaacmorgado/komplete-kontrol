@@ -5,7 +5,7 @@
  * and network analysis capabilities for complete web analysis.
  */
 
-import type { Logger } from '../utils/logger';
+import type { LoggerLike } from '../utils/logger';
 import type { AIProvider } from '../types';
 import { ZeroDriftCapturer, type CaptureOptions, type CaptureResult } from './vision/zero-drift-capture';
 import { ScreenshotToCodeConverter, type GenerateCodeOptions, type CodeGenerationResult } from './screenshot-to-code/converter';
@@ -52,13 +52,13 @@ export interface WebPageAnalysisOptions {
  * Orchestrates vision capture, code generation, and network analysis workflows.
  */
 export class VisionWorkflow {
-  private logger: Logger;
+  private logger: LoggerLike;
   private provider?: AIProvider;
   private capture: ZeroDriftCapturer;
   private codeConverter?: ScreenshotToCodeConverter;
   private networkAnalyzer: HARAnalyzer;
 
-  constructor(logger: Logger, provider?: AIProvider) {
+  constructor(logger: LoggerLike, provider?: AIProvider) {
     this.logger = logger;
     this.provider = provider;
     this.capture = new ZeroDriftCapturer(logger);
@@ -328,7 +328,7 @@ export class VisionWorkflow {
  * Create a vision workflow manager
  */
 export function createVisionWorkflow(
-  logger: Logger,
+  logger: LoggerLike,
   provider?: AIProvider
 ): VisionWorkflow {
   return new VisionWorkflow(logger, provider);

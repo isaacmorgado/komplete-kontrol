@@ -7,7 +7,7 @@
 
 import { getEncoding, encodingForModel, type TiktokenEncoding, type Tiktoken } from 'js-tiktoken';
 import type { Message, MessageContent, TextContent, ToolUseContent, ToolResultContent } from '../../../types';
-import { Logger } from '../../../utils/logger';
+import { Logger, LoggerLike } from '../../../utils/logger';
 
 /**
  * Token count result
@@ -95,12 +95,12 @@ const MODEL_ENCODINGS: Record<string, TiktokenEncoding> = {
  * Provides accurate token counting for OpenAI models using tiktoken.
  */
 export class TiktokenCounter {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: TokenCounterConfig;
   private encoderCache: Map<TiktokenEncoding, Tiktoken> = new Map();
   private tokenCache: Map<string, number> = new Map();
 
-  constructor(config: Partial<TokenCounterConfig> = {}, logger?: Logger) {
+  constructor(config: Partial<TokenCounterConfig> = {}, logger?: LoggerLike) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.logger = logger?.child('TiktokenCounter') ?? new Logger().child('TiktokenCounter');
     this.logger.debug('TiktokenCounter initialized', 'TiktokenCounter', {
@@ -286,10 +286,10 @@ export class TiktokenCounter {
  * Routes token counting to appropriate method based on provider.
  */
 export class ProviderTokenCounter {
-  private logger: Logger;
+  private logger: LoggerLike;
   private tiktokenCounter: TiktokenCounter;
 
-  constructor(logger?: Logger) {
+  constructor(logger?: LoggerLike) {
     this.logger = logger?.child('ProviderTokenCounter') ?? new Logger().child('ProviderTokenCounter');
     this.tiktokenCounter = new TiktokenCounter({}, this.logger);
   }
@@ -440,7 +440,7 @@ export function getTiktokenCounter(): TiktokenCounter {
 /**
  * Initialize global provider token counter
  */
-export function initProviderTokenCounter(logger?: Logger): ProviderTokenCounter {
+export function initProviderTokenCounter(logger?: LoggerLike): ProviderTokenCounter {
   globalProviderTokenCounter = new ProviderTokenCounter(logger);
   return globalProviderTokenCounter;
 }

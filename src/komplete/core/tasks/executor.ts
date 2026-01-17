@@ -8,7 +8,7 @@
  * - Error handling and retry
  */
 
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import type { Task, TaskPriority, TaskStatus } from '../../types';
 import type { TaskPlan, Subtask } from './planner';
 
@@ -102,13 +102,13 @@ export interface TaskExecutionOptions {
  * - Timeout management
  */
 export class TaskExecutor {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: TaskExecutionConfig;
   private activeExecutions = new Map<string, TaskExecutionContext>();
   private executionHistory: TaskExecutionResult[] = [];
   private executionCounter = 0;
 
-  constructor(config?: TaskExecutionConfig, logger?: Logger) {
+  constructor(config?: TaskExecutionConfig, logger?: LoggerLike) {
     this.config = {
       maxConcurrent: 5,
       defaultTimeout: 30000,

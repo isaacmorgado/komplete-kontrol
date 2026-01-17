@@ -5,7 +5,7 @@
  * to exclude files/directories from context gathering.
  */
 
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { glob } from 'glob';
 
 /**
@@ -75,7 +75,7 @@ const DEFAULT_PATTERNS = [
  * Manages .contextignore file parsing and file matching.
  */
 export class ContextIgnore {
-  private logger: Logger;
+  private logger: LoggerLike;
   private patterns: ContextIgnorePattern[] = [];
   private options: Required<ContextIgnoreOptions>;
 

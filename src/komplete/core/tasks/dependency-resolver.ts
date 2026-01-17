@@ -8,7 +8,7 @@
  * - Dependency validation
  */
 
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import type { Task, TaskPriority } from '../../types';
 import type { Subtask, TaskDependency, TaskPlan } from './planner';
 
@@ -76,10 +76,10 @@ export interface DependencyValidationOptions {
  * - Priority-based ordering
  */
 export class TaskDependencyResolver {
-  private logger: Logger;
+  private logger: LoggerLike;
   private dependencyCache = new Map<string, ResolutionResult>();
 
-  constructor(logger?: Logger) {
+  constructor(logger?: LoggerLike) {
     this.logger = logger?.child('TaskDependencyResolver') ?? new Logger().child('TaskDependencyResolver');
   }
 

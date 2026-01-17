@@ -16,7 +16,7 @@ import * as os from 'node:os';
 import { z } from 'zod';
 import type { Config, OperationalMode } from '../types';
 import { ConfigError } from '../types';
-import { Logger } from '../utils/logger';
+import { Logger, LoggerLike } from '../utils/logger';
 
 /**
  * Environment variable prefix
@@ -281,9 +281,9 @@ export class ConfigManager {
   private config: Config | null = null;
   private userConfigPath: string;
   private projectConfigPath: string;
-  private logger: Logger;
+  private logger: LoggerLike;
 
-  constructor(logger?: Logger) {
+  constructor(logger?: LoggerLike) {
     this.logger = logger ?? new Logger();
     this.userConfigPath = getUserConfigPath();
     this.projectConfigPath = getProjectConfigPath();
@@ -734,7 +734,7 @@ let globalConfigManager: ConfigManager | null = null;
 /**
  * Initialize global configuration manager
  */
-export function initConfigManager(logger?: Logger): ConfigManager {
+export function initConfigManager(logger?: LoggerLike): ConfigManager {
   globalConfigManager = new ConfigManager(logger);
   return globalConfigManager;
 }

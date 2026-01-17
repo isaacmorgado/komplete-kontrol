@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Logger } from '../../utils/logger';
+import { Logger, LoggerLike } from '../../utils/logger';
 import { AgentError } from '../../types';
 import { getMCPRegistry } from '../../mcp';
 import { MCPClient, createMCPClient } from '../../mcp';
@@ -129,7 +129,7 @@ interface CachedTool {
  */
 export class AgentMCPIntegration {
   private config: Required<AgentMCPIntegrationConfig>;
-  private logger: Logger;
+  private logger: LoggerLike;
   private toolCache: Map<string, CachedTool> = new Map();
   private clients: Map<string, MCPClient> = new Map();
   private cacheHits: number = 0;
@@ -137,7 +137,7 @@ export class AgentMCPIntegration {
   private totalMatches: number = 0;
   private matchScores: number[] = [];
 
-  constructor(config: AgentMCPIntegrationConfig = {}, logger?: Logger) {
+  constructor(config: AgentMCPIntegrationConfig = {}, logger?: LoggerLike) {
     this.config = {
       autoDiscover: config.autoDiscover ?? true,
       minMatchScore: config.minMatchScore ?? 0.3,

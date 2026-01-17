@@ -7,7 +7,7 @@
 
 import type { AIProvider, Message, CompletionOptions, CompletionResult, StreamChunk } from '../../../types';
 import { ProviderError } from '../../../types';
-import { Logger } from '../../../utils/logger';
+import { Logger, LoggerLike } from '../../../utils/logger';
 
 /**
  * Token bucket state
@@ -50,7 +50,7 @@ export interface RateLimitStatistics {
  * Supports per-provider and per-model rate limiting.
  */
 export class RateLimiter {
-  private logger: Logger;
+  private logger: LoggerLike;
   private config: RateLimitConfig;
   private globalBucket: TokenBucket;
   private providerBuckets: Map<string, TokenBucket> = new Map();
@@ -68,7 +68,7 @@ export class RateLimiter {
   private requestHistory: Array<{ timestamp: number; tokens: number }> = [];
   private historySize: number = 1000;
 
-  constructor(config?: Partial<RateLimitConfig>, logger?: Logger) {
+  constructor(config?: Partial<RateLimitConfig>, logger?: LoggerLike) {
     this.config = {
       tokensPerSecond: 10,
       maxTokens: 100,
@@ -385,9 +385,9 @@ export class RateLimiter {
 export class RateLimitedProvider implements AIProvider {
   private provider: AIProvider;
   private rateLimiter: RateLimiter;
-  private logger: Logger;
+  private logger: LoggerLike;
 
-  constructor(provider: AIProvider, rateLimiter: RateLimiter, logger?: Logger) {
+  constructor(provider: AIProvider, rateLimiter: RateLimiter, logger?: LoggerLike) {
     this.provider = provider;
     this.rateLimiter = rateLimiter;
     this.logger = logger?.child('RateLimitedProvider') ?? new Logger().child('RateLimitedProvider');
