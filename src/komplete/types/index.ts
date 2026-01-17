@@ -821,36 +821,66 @@ export interface OperationalModeConfig {
 }
 
 /**
+ * Mode-specific configuration
+ */
+export interface ModeSpecificConfig {
+  /** Temperature for this mode (0-2) */
+  temperature?: number;
+  /** Max tokens for responses in this mode */
+  maxTokens?: number;
+  /** Preferred model for this mode */
+  preferredModel?: string;
+  /** Tool groups available in this mode */
+  toolGroups?: ToolGroup[];
+}
+
+/**
+ * Provider-specific configuration
+ */
+export interface ProviderSpecificConfig {
+  /** API key for authentication */
+  apiKey?: string;
+  /** Base URL for the API endpoint */
+  baseUrl?: string;
+  /** Organization ID (for providers that support it) */
+  organization?: string;
+  /** Default model for this provider */
+  defaultModel?: string;
+}
+
+/**
  * Configuration file structure
  */
 export interface Config {
-  // Provider settings
-  providers: {
-    openRouter?: {
-      apiKey: string;
-      baseUrl?: string;
-    };
-    groq?: {
-      apiKey: string;
-    };
-    openai?: {
-      apiKey: string;
-      baseUrl?: string;
-    };
-    anthropic?: {
-      apiKey: string;
-    };
-    ollama?: {
-      baseUrl: string;
-    };
-    featherless?: {
-      apiKey: string;
-    };
+  // Provider settings (Section 3.3)
+  providers?: {
+    openRouter?: ProviderSpecificConfig;
+    groq?: ProviderSpecificConfig;
+    openai?: ProviderSpecificConfig;
+    anthropic?: ProviderSpecificConfig;
+    ollama?: ProviderSpecificConfig;
+    featherless?: ProviderSpecificConfig;
   };
 
-  // Model routing
+  // Default mode (Section 3.2)
+  defaultMode: OperationalMode;
+
+  // Model routing (Section 3.2)
   defaultModel: string;
   fallbackModels: string[];
+
+  // Tool calling method (Section 3.2)
+  toolCallingMethod: 'native' | 'xml' | 'json';
+
+  // Mode-specific settings (Section 3.2)
+  modes?: {
+    architect?: ModeSpecificConfig;
+    code?: ModeSpecificConfig;
+    debug?: ModeSpecificConfig;
+    test?: ModeSpecificConfig;
+    'reverse-engineer'?: ModeSpecificConfig;
+    ask?: ModeSpecificConfig;
+  };
 
   // Context management
   context: {

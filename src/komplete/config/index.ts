@@ -1,13 +1,20 @@
 /**
  * Configuration management system for KOMPLETE-KONTROL CLI
- * 
+ *
  * Handles loading, saving, and validating configuration from multiple sources.
+ *
+ * Configuration Priority (highest to lowest):
+ * 1. Environment variables (KOMPLETE_*)
+ * 2. Project config file (.komplete-kontrol.json in current directory)
+ * 3. User config file (~/.komplete-kontrol/config.json)
+ * 4. Default values
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as os from 'node:os';
 import { z } from 'zod';
-import type { Config } from '../types';
+import type { Config, OperationalMode } from '../types';
 import { ConfigError } from '../types';
 import { Logger } from '../utils/logger';
 
@@ -17,7 +24,32 @@ import { Logger } from '../utils/logger';
 const ENV_PREFIX = 'KOMPLETE_';
 
 /**
- * Get default configuration paths
+ * Get user config directory path
+ * Returns ~/.komplete-kontrol on Unix-like systems
+ */
+function getUserConfigDir(): string {
+  const home = os.homedir();
+  return path.join(home, '.komplete-kontrol');
+}
+
+/**
+ * Get user config file path
+ * Returns ~/.komplete-kontrol/config.json
+ */
+function getUserConfigPath(): string {
+  return path.join(getUserConfigDir(), 'config.json');
+}
+
+/**
+ * Get project config file path
+ * Returns .komplete-kontrol.json in the current directory
+ */
+function getProjectConfigPath(): string {
+  return path.join(process.cwd(), '.komplete-kontrol.json');
+}
+
+/**
+ * Get all configuration paths in order of priority (lowest to highest)
  * Can be overridden by KOMPLETE_CONFIG_PATHS environment variable
  */
 function getDefaultConfigPaths(): string[] {
@@ -35,13 +67,11 @@ function getDefaultConfigPaths(): string[] {
     }
   }
 
-  // Default configuration paths
+  // Default configuration paths (in order of priority, lowest first)
+  // Later entries override earlier ones during merge
   return [
-    path.join(process.cwd(), '.kompleterc.json'),
-    path.join(process.cwd(), '.kompleterc'),
-    path.join(process.env.HOME ?? '', '.kompleterc.json'),
-    path.join(process.env.HOME ?? '', '.kompleterc'),
-    path.join(process.env.HOME ?? '', '.config', 'komplete-kontrol', 'config.json'),
+    getUserConfigPath(),        // ~/.komplete-kontrol/config.json (user defaults)
+    getProjectConfigPath(),     // .komplete-kontrol.json (project overrides)
   ];
 }
 
@@ -50,46 +80,147 @@ function getDefaultConfigPaths(): string[] {
  */
 const DEFAULT_CONFIG_PATHS = getDefaultConfigPaths();
 
+// ============================================================================
+// Default Configuration Values
+// ============================================================================
+
+/**
+ * Default mode-specific settings
+ */
+export const DEFAULT_MODE_SETTINGS: Record<OperationalMode, { temperature: number; maxTokens: number }> = {
+  'architect': { temperature: 0.7, maxTokens: 8192 },
+  'code': { temperature: 0.3, maxTokens: 4096 },
+  'debug': { temperature: 0.2, maxTokens: 4096 },
+  'test': { temperature: 0.3, maxTokens: 4096 },
+  'reverse-engineer': { temperature: 0.4, maxTokens: 8192 },
+  'ask': { temperature: 0.7, maxTokens: 2048 },
+};
+
+/**
+ * Default models per provider
+ */
+export const DEFAULT_PROVIDER_MODELS: Record<string, string> = {
+  'anthropic': 'claude-3-5-sonnet-20241022',
+  'openai': 'gpt-4o',
+  'featherless': 'meta-llama/Meta-Llama-3.1-70B-Instruct',
+  'ollama': 'llama3.1',
+  'groq': 'llama-3.1-70b-versatile',
+  'openRouter': 'anthropic/claude-3.5-sonnet',
+};
+
+/**
+ * Default context window size
+ */
+export const DEFAULT_CONTEXT_WINDOW_SIZE = 200000;
+
+/**
+ * Default tool calling method
+ */
+export const DEFAULT_TOOL_CALLING_METHOD: 'native' | 'xml' | 'json' = 'native';
+
+/**
+ * Valid operational modes
+ */
+const OperationalModeSchema = z.enum([
+  'architect',
+  'code',
+  'debug',
+  'test',
+  'reverse-engineer',
+  'ask',
+]);
+
+/**
+ * Tool calling method schema
+ */
+const ToolCallingMethodSchema = z.enum(['native', 'xml', 'json']);
+
+/**
+ * Provider configuration schema with all supported providers
+ */
+const ProvidersSchema = z.object({
+  openRouter: z.object({
+    apiKey: z.string().optional(),
+    baseUrl: z.string().url().optional(),
+    defaultModel: z.string().optional(),
+  }).optional(),
+  groq: z.object({
+    apiKey: z.string().optional(),
+    defaultModel: z.string().optional(),
+  }).optional(),
+  openai: z.object({
+    apiKey: z.string().optional(),
+    baseUrl: z.string().url().optional(),
+    organization: z.string().optional(),
+    defaultModel: z.string().optional(),
+  }).optional(),
+  anthropic: z.object({
+    apiKey: z.string().optional(),
+    defaultModel: z.string().optional(),
+  }).optional(),
+  ollama: z.object({
+    baseUrl: z.string().optional(),  // Not using .url() to allow localhost:port format
+    defaultModel: z.string().optional(),
+  }).optional(),
+  featherless: z.object({
+    apiKey: z.string().optional(),
+    baseUrl: z.string().url().optional(),
+    defaultModel: z.string().optional(),
+  }).optional(),
+}).optional();
+
+/**
+ * Mode-specific configuration schema
+ */
+const ModeConfigSchema = z.object({
+  temperature: z.number().min(0).max(2).optional(),
+  maxTokens: z.number().int().positive().optional(),
+  preferredModel: z.string().optional(),
+  toolGroups: z.array(z.enum(['read', 'edit', 'browser', 'command', 'mcp', 'modes'])).optional(),
+}).optional();
+
 /**
  * Configuration schema for validation
  */
 const ConfigSchema = z.object({
-  providers: z.object({
-    openRouter: z.object({
-      apiKey: z.string().optional(),
-      baseUrl: z.string().url().optional(),
-    }).optional(),
-    groq: z.object({
-      apiKey: z.string().optional(),
-    }).optional(),
-    openai: z.object({
-      apiKey: z.string().optional(),
-      baseUrl: z.string().url().optional(),
-    }).optional(),
-    anthropic: z.object({
-      apiKey: z.string().optional(),
-    }).optional(),
-    ollama: z.object({
-      baseUrl: z.string().url().optional(),
-    }).optional(),
-    featherless: z.object({
-      apiKey: z.string().optional(),
-    }).optional(),
-  }).optional(),
+  // Provider settings (Section 3.3)
+  providers: ProvidersSchema,
 
-  defaultModel: z.string().default('or/claude-3.5-sonnet'),
-  fallbackModels: z.array(z.string()).default([]),
+  // Default mode (Section 3.2)
+  defaultMode: OperationalModeSchema.default('code'),
 
+  // Default model per provider (Section 3.2)
+  defaultModel: z.string().default('anthropic/claude-3-5-sonnet-20241022'),
+  fallbackModels: z.array(z.string()).default([
+    'openai/gpt-4o',
+    'anthropic/claude-3-haiku-20240307',
+  ]),
+
+  // Tool calling method (Section 3.2)
+  toolCallingMethod: ToolCallingMethodSchema.default('native'),
+
+  // Mode-specific settings (Section 3.2)
+  modes: z.object({
+    architect: ModeConfigSchema,
+    code: ModeConfigSchema,
+    debug: ModeConfigSchema,
+    test: ModeConfigSchema,
+    'reverse-engineer': ModeConfigSchema,
+    ask: ModeConfigSchema,
+  }).default({}),
+
+  // Context management
   context: z.object({
-    maxTokens: z.number().int().positive().default(200000),
+    maxTokens: z.number().int().positive().default(DEFAULT_CONTEXT_WINDOW_SIZE),
     condensationThreshold: z.number().int().positive().default(150000),
     preserveToolUse: z.boolean().default(true),
   }).default({
-    maxTokens: 200000,
+    maxTokens: DEFAULT_CONTEXT_WINDOW_SIZE,
     condensationThreshold: 150000,
     preserveToolUse: true,
   }),
 
+  // Agent settings
   agents: z.object({
     maxParallel: z.number().int().positive().default(4),
     timeoutMs: z.number().int().positive().default(30000),
@@ -98,6 +229,7 @@ const ConfigSchema = z.object({
     timeoutMs: 30000,
   }),
 
+  // Cost budgeting
   budget: z.object({
     maxCostPerCommand: z.number().positive().default(1.0),
     maxDailyCost: z.number().positive().default(10.0),
@@ -108,6 +240,7 @@ const ConfigSchema = z.object({
     alertThreshold: 0.8,
   }),
 
+  // MCP settings
   mcp: z.object({
     servers: z.array(z.object({
       id: z.string(),
@@ -123,6 +256,7 @@ const ConfigSchema = z.object({
     enabled: true,
   }),
 
+  // Logging
   logging: z.object({
     level: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     file: z.string().optional(),
@@ -133,40 +267,55 @@ const ConfigSchema = z.object({
 
 /**
  * Configuration manager class
+ *
+ * Handles reading, writing, and merging configuration from multiple sources:
+ * - Default values (built-in)
+ * - User config file (~/.komplete-kontrol/config.json)
+ * - Project config file (.komplete-kontrol.json in current directory)
+ * - Environment variables (KOMPLETE_*)
+ *
+ * Priority: env > project > user > defaults
  */
 export class ConfigManager {
   private config: Config | null = null;
-  private configPath: string | null = null;
+  private userConfigPath: string;
+  private projectConfigPath: string;
   private logger: Logger;
 
   constructor(logger?: Logger) {
     this.logger = logger ?? new Logger();
+    this.userConfigPath = getUserConfigPath();
+    this.projectConfigPath = getProjectConfigPath();
   }
 
   /**
-   * Find configuration file
+   * Check if a file exists
    */
-  private findConfigPath(): string | null {
-    for (const configPath of DEFAULT_CONFIG_PATHS) {
-      try {
-        if (fs.existsSync(configPath)) {
-          return configPath;
-        }
-      } catch (error) {
-        // Continue to next path
-      }
+  private fileExists(filePath: string): boolean {
+    try {
+      return fs.existsSync(filePath);
+    } catch {
+      return false;
     }
-    return null;
   }
 
   /**
-   * Load configuration from file
+   * Load configuration from file (returns null if file doesn't exist)
    */
-  private loadFromFile(configPath: string): Partial<Config> {
+  private loadFromFile(configPath: string, required: boolean = false): Partial<Config> | null {
+    if (!this.fileExists(configPath)) {
+      if (required) {
+        throw new ConfigError(`Configuration file not found: ${configPath}`, {
+          path: configPath,
+        });
+      }
+      return null;
+    }
+
     try {
       const content = fs.readFileSync(configPath, 'utf-8');
       const parsed = JSON.parse(content);
-      this.logger.info(`Loaded configuration from ${configPath}`, 'ConfigManager');
+      this.logger.debug(`Loaded configuration from ${configPath}`, 'ConfigManager');
       return parsed;
     } catch (error) {
       throw new ConfigError(`Failed to load configuration from ${configPath}`, {
@@ -174,6 +323,27 @@ export class ConfigManager {
         error: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+
+  /**
+   * Get the user config directory path
+   */
+  getUserConfigDir(): string {
+    return getUserConfigDir();
+  }
+
+  /**
+   * Get the user config file path
+   */
+  getUserConfigPath(): string {
+    return this.userConfigPath;
+  }
+
+  /**
+   * Get the project config file path
+   */
+  getProjectConfigPath(): string {
+    return this.projectConfigPath;
   }
 
   /**
@@ -242,6 +412,22 @@ export class ConfigManager {
       envConfig.defaultModel = process.env[`${ENV_PREFIX}DEFAULT_MODEL`];
     }
 
+    // Default mode
+    if (process.env[`${ENV_PREFIX}DEFAULT_MODE`]) {
+      const mode = process.env[`${ENV_PREFIX}DEFAULT_MODE`]?.toLowerCase();
+      if (mode && ['architect', 'code', 'debug', 'test', 'reverse-engineer', 'ask'].includes(mode)) {
+        envConfig.defaultMode = mode as OperationalMode;
+      }
+    }
+
+    // Tool calling method
+    if (process.env[`${ENV_PREFIX}TOOL_CALLING_METHOD`]) {
+      const method = process.env[`${ENV_PREFIX}TOOL_CALLING_METHOD`]?.toLowerCase();
+      if (method && ['native', 'xml', 'json'].includes(method)) {
+        envConfig.toolCallingMethod = method as 'native' | 'xml' | 'json';
+      }
+    }
+
     // Logging level
     if (process.env[`${ENV_PREFIX}LOG_LEVEL`]) {
       envConfig.logging = envConfig.logging ?? { level: 'info' };
@@ -297,28 +483,51 @@ export class ConfigManager {
   }
 
   /**
-   * Load configuration
+   * Load configuration from all sources with proper priority
+   *
+   * Priority (highest to lowest):
+   * 1. Environment variables (KOMPLETE_*)
+   * 2. Project config file (.komplete-kontrol.json in current directory)
+   * 3. User config file (~/.komplete-kontrol/config.json)
+   * 4. Default values (built-in schema defaults)
+   *
+   * @param customConfigPath - Optional custom config file path (overrides project config)
    */
-  load(configPath?: string): Config {
+  load(customConfigPath?: string): Config {
     const sources: Partial<Config>[] = [];
+    const loadedFrom: string[] = [];
 
-    // Load from file
-    const filePath = configPath ?? this.findConfigPath();
-    if (filePath) {
-      this.configPath = filePath;
-      sources.push(this.loadFromFile(filePath));
+    // 1. Load from user config file (~/.komplete-kontrol/config.json)
+    const userConfig = this.loadFromFile(this.userConfigPath);
+    if (userConfig) {
+      sources.push(userConfig);
+      loadedFrom.push(`user: ${this.userConfigPath}`);
     }
 
-    // Load from environment
-    sources.push(this.loadFromEnv());
+    // 2. Load from project config file (.komplete-kontrol.json) or custom path
+    const projectPath = customConfigPath ?? this.projectConfigPath;
+    const projectConfig = this.loadFromFile(projectPath, customConfigPath !== undefined);
+    if (projectConfig) {
+      sources.push(projectConfig);
+      loadedFrom.push(`project: ${projectPath}`);
+    }
 
-    // Merge and validate
+    // 3. Load from environment variables (highest priority)
+    const envConfig = this.loadFromEnv();
+    if (Object.keys(envConfig).length > 0) {
+      sources.push(envConfig);
+      loadedFrom.push('environment');
+    }
+
+    // Merge all configs and validate
     const merged = this.mergeConfigs(...sources);
     this.config = this.validateConfig(merged);
 
     this.logger.info('Configuration loaded successfully', 'ConfigManager', {
-      configPath: this.configPath,
+      loadedFrom,
+      defaultMode: this.config.defaultMode,
       defaultModel: this.config.defaultModel,
+      toolCallingMethod: this.config.toolCallingMethod,
       providers: Object.keys(this.config.providers || {}),
     });
 
@@ -326,27 +535,108 @@ export class ConfigManager {
   }
 
   /**
-   * Save configuration to file
+   * Check if user config file exists
    */
-  async save(config: Partial<Config>, configPath?: string): Promise<void> {
-    const filePath: string = (configPath ?? this.configPath ?? DEFAULT_CONFIG_PATHS[0])!;
+  hasUserConfig(): boolean {
+    return this.fileExists(this.userConfigPath);
+  }
 
+  /**
+   * Check if project config file exists
+   */
+  hasProjectConfig(): boolean {
+    return this.fileExists(this.projectConfigPath);
+  }
+
+  /**
+   * Initialize user config directory and file with defaults
+   */
+  async initUserConfig(): Promise<void> {
+    const configDir = getUserConfigDir();
+
+    // Create directory if it doesn't exist
+    if (!this.fileExists(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+      this.logger.info(`Created config directory: ${configDir}`, 'ConfigManager');
+    }
+
+    // Create default config file if it doesn't exist
+    if (!this.hasUserConfig()) {
+      const defaultConfig: Partial<Config> = {
+        defaultMode: 'code',
+        defaultModel: 'anthropic/claude-3-5-sonnet-20241022',
+        toolCallingMethod: 'native',
+        providers: {},
+        logging: { level: 'info' },
+      };
+
+      await fs.promises.writeFile(
+        this.userConfigPath,
+        JSON.stringify(defaultConfig, null, 2),
+        'utf-8',
+      );
+      this.logger.info(`Created default user config: ${this.userConfigPath}`, 'ConfigManager');
+    }
+  }
+
+  /**
+   * Initialize project config file with defaults
+   */
+  async initProjectConfig(): Promise<void> {
+    if (!this.hasProjectConfig()) {
+      const projectConfig: Partial<Config> = {
+        defaultMode: 'code',
+        // Project config typically only overrides specific settings
+      };
+
+      await fs.promises.writeFile(
+        this.projectConfigPath,
+        JSON.stringify(projectConfig, null, 2),
+        'utf-8',
+      );
+      this.logger.info(`Created project config: ${this.projectConfigPath}`, 'ConfigManager');
+    }
+  }
+
+  /**
+   * Save configuration to user config file
+   */
+  async saveToUserConfig(config: Partial<Config>): Promise<void> {
+    await this.saveToFile(config, this.userConfigPath);
+  }
+
+  /**
+   * Save configuration to project config file
+   */
+  async saveToProjectConfig(config: Partial<Config>): Promise<void> {
+    await this.saveToFile(config, this.projectConfigPath);
+  }
+
+  /**
+   * Save configuration to a specific file
+   */
+  async saveToFile(config: Partial<Config>, filePath: string): Promise<void> {
     try {
+      // Load existing config from file if it exists
+      const existing = this.loadFromFile(filePath) ?? {};
+
       // Merge with existing config
-      const merged = this.mergeConfigs(this.config ?? {}, config);
+      const merged = this.mergeConfigs(existing, config);
       const validated = this.validateConfig(merged);
 
       // Ensure directory exists
       const dir: string = path.dirname(filePath);
-      if (dir && !fs.existsSync(dir)) {
+      if (dir && !this.fileExists(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
 
       // Write to file
       await fs.promises.writeFile(filePath, JSON.stringify(validated, null, 2), 'utf-8');
 
-      this.config = validated;
-      this.configPath = filePath;
+      // Update in-memory config if this was the project config
+      if (filePath === this.projectConfigPath && this.config) {
+        this.config = this.validateConfig(this.mergeConfigs(this.config, config));
+      }
 
       this.logger.info(`Configuration saved to ${filePath}`, 'ConfigManager');
     } catch (error) {
@@ -355,6 +645,15 @@ export class ConfigManager {
         error: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+
+  /**
+   * Legacy save method for backward compatibility
+   * @deprecated Use saveToUserConfig or saveToProjectConfig instead
+   */
+  async save(config: Partial<Config>, configPath?: string): Promise<void> {
+    const filePath = configPath ?? this.projectConfigPath;
+    await this.saveToFile(config, filePath);
   }
 
   /**
@@ -368,21 +667,14 @@ export class ConfigManager {
   }
 
   /**
-   * Get configuration path
-   */
-  getPath(): string | null {
-    return this.configPath;
-  }
-
-  /**
-   * Reload configuration
+   * Reload configuration from all sources
    */
   reload(): Config {
-    return this.load(this.configPath ?? undefined);
+    return this.load();
   }
 
   /**
-   * Set configuration value
+   * Set configuration value in memory (not persisted)
    */
   set<K extends keyof Config>(key: K, value: Config[K]): void {
     if (!this.config) {
@@ -399,6 +691,37 @@ export class ConfigManager {
       throw new ConfigError('Configuration not loaded. Call load() first.');
     }
     return this.config[key];
+  }
+
+  /**
+   * Get settings for a specific mode
+   * Returns merged defaults with mode-specific overrides
+   */
+  getModeSettings(mode: OperationalMode): { temperature: number; maxTokens: number; preferredModel?: string } {
+    if (!this.config) {
+      throw new ConfigError('Configuration not loaded. Call load() first.');
+    }
+
+    const defaults = DEFAULT_MODE_SETTINGS[mode];
+    const modeConfig = this.config.modes?.[mode];
+
+    return {
+      temperature: modeConfig?.temperature ?? defaults.temperature,
+      maxTokens: modeConfig?.maxTokens ?? defaults.maxTokens,
+      preferredModel: modeConfig?.preferredModel ?? this.config.defaultModel,
+    };
+  }
+
+  /**
+   * Get default model for a provider
+   */
+  getProviderDefaultModel(provider: string): string | undefined {
+    if (!this.config) {
+      throw new ConfigError('Configuration not loaded. Call load() first.');
+    }
+
+    const providerConfig = this.config.providers?.[provider as keyof typeof this.config.providers];
+    return providerConfig?.defaultModel ?? DEFAULT_PROVIDER_MODELS[provider];
   }
 }
 
