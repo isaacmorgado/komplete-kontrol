@@ -8,9 +8,10 @@
  * - Config: configuration get/set operations
  *
  * Part of Phase 01: Foundation & Infrastructure (Section 5: IPC Bridge Extensions)
+ * Updated in Phase 02: Mode System Integration (Section 6: IPC Handlers for Modes)
  */
 
-import { ipcMain } from 'electron';
+import { ipcMain, BrowserWindow } from 'electron';
 import Store from 'electron-store';
 import {
   getConfigManager,
@@ -26,6 +27,17 @@ import type {
   Config,
 } from '../../../komplete/types';
 import { Logger, LogLevel } from '../../../komplete/utils/logger';
+
+// Import Mode Controller from the modes module
+import {
+  ModeController,
+  getModeController,
+  initModeController,
+  isModeControllerInitialized,
+} from '../../modes/controller';
+import { MODE_DEFINITIONS, TOOL_GROUPS, ALWAYS_AVAILABLE_TOOLS } from '../../modes/definitions';
+import { ALL_OPERATIONAL_MODES, ALL_TOOL_GROUPS as ALL_TOOL_GROUPS_FROM_TYPES } from '../../modes/types';
+import type { ModeTransition, ModeError } from '../../modes/types';
 
 /**
  * Interface for Komplete settings store
@@ -145,9 +157,6 @@ const AVAILABLE_PROVIDERS = [
   { id: 'featherless', name: 'Featherless', prefix: 'fl' as const },
 ];
 
-// Current mode state (in-memory, per session)
-let currentMode: OperationalMode = 'code';
-
 // Logger instance for komplete handlers
 const logger = new Logger({
   level: LogLevel.INFO,
@@ -162,62 +171,125 @@ const logger = new Logger({
 export function registerKompleteHandlers(deps: KompleteHandlerDependencies): void {
   const { settingsStore } = deps;
 
-  // Initialize current mode from settings if available
-  const savedMode = settingsStore.get('currentMode');
-  if (savedMode && ALL_MODES.includes(savedMode)) {
-    currentMode = savedMode;
+  // Initialize Mode Controller if not already initialized
+  if (!isModeControllerInitialized()) {
+    const savedMode = settingsStore.get('currentMode');
+    const initialMode = savedMode && ALL_OPERATIONAL_MODES.includes(savedMode)
+      ? savedMode
+      : 'code';
+    initModeController(undefined, initialMode);
   }
 
-  // ============ Mode Handlers ============
+  const modeController = getModeController();
+
+  // Set up event listeners for mode changes to broadcast to renderer
+  modeController.on('mode-changed', (transition: ModeTransition) => {
+    const windows = BrowserWindow.getAllWindows();
+    for (const window of windows) {
+      window.webContents.send('komplete:mode:changed', transition);
+    }
+  });
+
+  modeController.on('mode-error', (error: ModeError) => {
+    const windows = BrowserWindow.getAllWindows();
+    for (const window of windows) {
+      window.webContents.send('komplete:mode:error', error);
+    }
+  });
+
+  // ============ Mode Handlers (Section 6.1) ============
 
   // Get current operational mode
   ipcMain.handle('komplete:mode:get-current', async () => {
-    logger.debug('Getting current mode', 'komplete:mode:get-current', { mode: currentMode });
+    const config = modeController.getCurrentMode();
+    logger.debug('Getting current mode', 'komplete:mode:get-current', { mode: config.slug });
     return {
-      mode: currentMode,
-      config: DEFAULT_MODE_CONFIGS[currentMode],
+      mode: config.slug,
+      config,
     };
   });
 
-  // Switch operational mode
+  // Switch operational mode (with validation)
   ipcMain.handle(
     'komplete:mode:switch',
     async (_event, mode: OperationalMode) => {
-      if (!ALL_MODES.includes(mode)) {
+      if (!ALL_OPERATIONAL_MODES.includes(mode)) {
         logger.warn('Invalid mode requested', 'komplete:mode:switch', { requestedMode: mode });
         return {
           success: false,
-          error: `Invalid mode: ${mode}. Valid modes are: ${ALL_MODES.join(', ')}`,
+          error: `Invalid mode: ${mode}. Valid modes are: ${ALL_OPERATIONAL_MODES.join(', ')}`,
         };
       }
 
-      const previousMode = currentMode;
-      currentMode = mode;
+      try {
+        const transition = await modeController.switchMode(mode, 'user');
 
-      // Persist the mode preference
-      settingsStore.set('currentMode', mode);
+        // Persist the mode preference
+        settingsStore.set('currentMode', mode);
 
-      logger.info('Mode switched', 'komplete:mode:switch', {
-        from: previousMode,
-        to: mode,
-      });
+        logger.info('Mode switched', 'komplete:mode:switch', {
+          from: transition.from,
+          to: transition.to,
+        });
 
-      return {
-        success: true,
-        previousMode,
-        currentMode: mode,
-        config: DEFAULT_MODE_CONFIGS[mode],
-      };
+        return {
+          success: true,
+          previousMode: transition.from,
+          currentMode: transition.to,
+          config: transition.config,
+        };
+      } catch (error) {
+        logger.warn('Mode switch failed', 'komplete:mode:switch', {
+          requestedMode: mode,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
     }
   );
 
   // Get all available modes
   ipcMain.handle('komplete:mode:get-all', async () => {
+    const allModes = modeController.getAllModes();
+    const currentConfig = modeController.getCurrentMode();
+    const configs: Record<string, typeof currentConfig> = {};
+
+    for (const mode of allModes) {
+      configs[mode.slug] = mode;
+    }
+
     logger.debug('Getting all modes', 'komplete:mode:get-all');
     return {
-      modes: ALL_MODES,
-      configs: DEFAULT_MODE_CONFIGS,
-      currentMode,
+      modes: allModes.map(m => m.slug),
+      configs,
+      currentMode: currentConfig.slug,
+    };
+  });
+
+  // Get mode configuration by slug
+  ipcMain.handle('komplete:mode:get-config', async (_event, mode: OperationalMode) => {
+    const config = modeController.getModeConfig(mode);
+    if (!config) {
+      return {
+        success: false,
+        error: `Mode not found: ${mode}`,
+      };
+    }
+    return {
+      success: true,
+      config,
+    };
+  });
+
+  // Get mode history
+  ipcMain.handle('komplete:mode:get-history', async () => {
+    const history = modeController.getModeHistory();
+    return {
+      history,
+      switchCount: modeController.getSwitchCount(),
     };
   });
 
@@ -225,26 +297,20 @@ export function registerKompleteHandlers(deps: KompleteHandlerDependencies): voi
 
   // Get available tools for current mode
   ipcMain.handle('komplete:tools:get-available', async () => {
-    const modeConfig = DEFAULT_MODE_CONFIGS[currentMode];
-    const availableTools: string[] = [];
-
-    // Collect tools from all enabled tool groups for current mode
-    for (const group of modeConfig.toolGroups) {
-      const groupTools = DEFAULT_TOOLS_BY_GROUP[group] || [];
-      availableTools.push(...groupTools);
-    }
+    const currentConfig = modeController.getCurrentMode();
+    const availableTools = modeController.getAllowedTools();
 
     logger.debug('Getting available tools', 'komplete:tools:get-available', {
-      mode: currentMode,
+      mode: currentConfig.slug,
       toolCount: availableTools.length,
     });
 
     return {
-      mode: currentMode,
-      toolGroups: modeConfig.toolGroups,
+      mode: currentConfig.slug,
+      toolGroups: currentConfig.toolGroups,
       tools: availableTools,
       allToolGroups: ALL_TOOL_GROUPS,
-      toolsByGroup: DEFAULT_TOOLS_BY_GROUP,
+      toolsByGroup: TOOL_GROUPS,
     };
   });
 

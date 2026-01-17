@@ -1826,6 +1826,24 @@ contextBridge.exposeInMainWorld('komplete', {
       configs: Record<OperationalMode, OperationalModeConfig>;
       currentMode: OperationalMode;
     }>,
+
+    /**
+     * Get configuration for a specific mode
+     * @param mode - The mode to get configuration for
+     */
+    getConfig: (mode: OperationalMode) => ipcRenderer.invoke('komplete:mode:get-config', mode) as Promise<{
+      success: boolean;
+      config?: OperationalModeConfig;
+      error?: string;
+    }>,
+
+    /**
+     * Get mode switch history
+     */
+    getHistory: () => ipcRenderer.invoke('komplete:mode:get-history') as Promise<{
+      history: OperationalMode[];
+      switchCount: number;
+    }>,
   },
 
   // Tool management API
