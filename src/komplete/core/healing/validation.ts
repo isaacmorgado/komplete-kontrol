@@ -98,6 +98,11 @@ export interface ValidationWarning {
   message: string;
 
   /**
+   * Warning severity
+   */
+  severity?: 'low' | 'medium' | 'high' | 'info' | 'warning';
+
+  /**
    * Line number
    */
   lineNumber?: number;
@@ -795,13 +800,13 @@ export class FixValidation {
     const files: string[] = [];
 
     try {
-      const entries = await Array.fromAsync(
-        Bun.fs.readdir(directory, { recursive: true })
-      );
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+      const entries = await fs.readdir(directory, { recursive: true, withFileTypes: true });
 
       for (const entry of entries) {
-        if (entry.isFile) {
-          files.push(entry.path);
+        if (entry.isFile()) {
+          files.push(path.join(entry.parentPath ?? entry.path ?? '', entry.name));
         }
       }
     } catch (error) {

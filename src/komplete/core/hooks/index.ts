@@ -82,10 +82,10 @@ export interface Hook {
   operationPattern: string;
   /** Hook function */
   fn: HookFunction;
-  /** Priority */
-  priority: HookPriority;
-  /** Enabled */
-  enabled: boolean;
+  /** Priority (default: NORMAL) */
+  priority?: HookPriority;
+  /** Enabled (default: true) */
+  enabled?: boolean;
   /** Max execution time (ms) */
   timeout?: number;
   /** Description */
@@ -241,7 +241,7 @@ export class HookManager {
       }
 
       // Sort by priority (lower = earlier)
-      matchingHooks.sort((a, b) => a.priority - b.priority);
+      matchingHooks.sort((a, b) => (a.priority ?? HookPriority.NORMAL) - (b.priority ?? HookPriority.NORMAL));
 
       // Build full context
       const fullContext: HookContext = {

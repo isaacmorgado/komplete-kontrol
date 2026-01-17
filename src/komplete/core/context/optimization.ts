@@ -96,7 +96,7 @@ export class ContextOptimizer {
       optimizedCount: selectedMessages.length,
       originalTokens,
       optimizedTokens,
-      reductionPercentage: result.reductionPercentage.toFixed(2),
+      reductionPercentage: (result.reductionPercentage ?? 0).toFixed(2),
     } as Record<string, unknown>);
 
     return result;
@@ -159,14 +159,8 @@ export class ContextOptimizer {
    * @returns Estimated token count
    */
   private estimateItemTokens(item: MessageContent): number {
-    if (typeof item === 'string') {
-      // Rough estimate: 1 token per 4 characters
-      return Math.ceil(item.length / 4);
-    }
-
     if (item.type === 'text') {
-      const text = (item as { type: 'text'; text: string }).text;
-      return Math.ceil(text.length / 4);
+      return Math.ceil(item.text.length / 4);
     }
 
     if (item.type === 'image') {
@@ -310,18 +304,24 @@ export class ContextOptimizer {
     const selected: ContextMessage[] = [];
     let currentTokens = 0;
 
+    // Use defaults for optional config values
+    const minRelevanceScore = this.config.minRelevanceScore ?? 0.3;
+    const maxTokens = this.config.maxTokens ?? 128000;
+    const targetTokens = this.config.targetTokens ?? 100000;
+    const preserveRecentMessages = this.config.preserveRecentMessages ?? 10;
+
     for (const { message, score } of scoredMessages) {
       // Skip if below minimum relevance
-      if (score < this.config.minRelevanceScore && message.role !== 'system') {
+      if (score < minRelevanceScore && message.role !== 'system') {
         continue;
       }
 
       const messageTokens = this.estimateMessageTokens(message);
 
       // Check if adding this message would exceed max tokens
-      if (currentTokens + messageTokens > this.config.maxTokens) {
+      if (currentTokens + messageTokens > maxTokens) {
         // Try to fit if we're below target
-        if (currentTokens < this.config.targetTokens) {
+        if (currentTokens < targetTokens) {
           selected.push(message);
           currentTokens += messageTokens;
         }
@@ -334,14 +334,14 @@ export class ContextOptimizer {
 
     // Ensure recent messages are preserved
     const recentMessages = scoredMessages
-      .slice(-this.config.preserveRecentMessages)
+      .slice(-preserveRecentMessages)
       .filter(item => !selected.includes(item.message))
       .map(item => item.message);
 
     // Add recent messages if there's room
     for (const message of recentMessages) {
       const messageTokens = this.estimateMessageTokens(message);
-      if (currentTokens + messageTokens <= this.config.maxTokens) {
+      if (currentTokens + messageTokens <= maxTokens) {
         selected.push(message);
         currentTokens += messageTokens;
       }

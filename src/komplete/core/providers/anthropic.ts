@@ -127,7 +127,7 @@ export class AnthropicProvider extends BaseProvider {
       const result: CompletionResult = {
         content,
         model: response.model,
-        stopReason: response.stop_reason,
+        stopReason: response.stop_reason ?? undefined,
         usage: response.usage
           ? {
               inputTokens: response.usage.input_tokens,
@@ -186,9 +186,32 @@ export class AnthropicProvider extends BaseProvider {
       });
 
       let fullContent = '';
+      let usageInfo: { inputTokens: number; outputTokens: number; totalTokens: number } | undefined;
+      let stopReason: string | undefined;
 
       for await (const event of stream) {
-        if (event.type === 'content_block_delta') {
+        if (event.type === 'message_start' && event.message) {
+          // Capture initial usage info from message_start
+          if (event.message.usage) {
+            usageInfo = {
+              inputTokens: event.message.usage.input_tokens,
+              outputTokens: event.message.usage.output_tokens,
+              totalTokens: event.message.usage.input_tokens + event.message.usage.output_tokens,
+            };
+          }
+          stopReason = event.message.stop_reason ?? undefined;
+        } else if (event.type === 'message_delta' && 'delta' in event) {
+          // Capture final usage from message_delta
+          const delta = event.delta as { stop_reason?: string | null };
+          if (delta.stop_reason) {
+            stopReason = delta.stop_reason;
+          }
+          const eventUsage = (event as { usage?: { output_tokens: number } }).usage;
+          if (eventUsage && usageInfo) {
+            usageInfo.outputTokens = eventUsage.output_tokens;
+            usageInfo.totalTokens = usageInfo.inputTokens + eventUsage.output_tokens;
+          }
+        } else if (event.type === 'content_block_delta') {
           if (event.delta.type === 'text_delta' && event.delta.text) {
             fullContent += event.delta.text;
 
@@ -205,20 +228,14 @@ export class AnthropicProvider extends BaseProvider {
             content: { type: 'text', text: fullContent } as TextContent,
             delta: '',
             done: true,
-            usage: event.message?.usage
-              ? {
-                  inputTokens: event.message.usage.input_tokens,
-                  outputTokens: event.message.usage.output_tokens,
-                  totalTokens: event.message.usage.input_tokens + event.message.usage.output_tokens,
-                }
-              : undefined,
+            usage: usageInfo,
           };
 
           yield finalChunk;
 
           this.logger.debug('Anthropic streaming complete', 'AnthropicProvider', {
             model,
-            stopReason: event.message?.stop_reason,
+            stopReason,
             usage: finalChunk.usage,
           });
 
@@ -298,15 +315,15 @@ export class AnthropicProvider extends BaseProvider {
    * Convert content to Anthropic format
    *
    * @param content - Message content
-   * @returns Anthropic content format
+   * @returns Anthropic message content (not ContentBlock which is for responses)
    */
-  private convertContent(content: Message['content']): Anthropic.ContentBlock[] {
+  private convertContent(content: Message['content']): Anthropic.Messages.ContentBlockParam[] {
     if (typeof content === 'string') {
       return [{ type: 'text', text: content }];
     }
 
     if (Array.isArray(content)) {
-      return content.map((item) => {
+      return content.map((item): Anthropic.Messages.ContentBlockParam => {
         if (typeof item === 'string') {
           return { type: 'text', text: item };
         }
@@ -316,13 +333,9 @@ export class AnthropicProvider extends BaseProvider {
         if (item.type === 'image') {
           return {
             type: 'image',
-            source: {
-              type: item.source.type === 'url' ? 'url' : 'base64',
-              [item.source.type === 'url' ? 'url' : 'media_type']: item.source.type === 'url'
-                ? item.source.data
-                : item.source.media_type || 'image/png',
-              data: item.source.type === 'url' ? undefined : item.source.data,
-            },
+            source: item.source.type === 'url'
+              ? { type: 'url', url: item.source.data }
+              : { type: 'base64', media_type: (item.source.media_type || 'image/png') as Anthropic.Messages.Base64ImageSource['media_type'], data: item.source.data },
           };
         }
         if (item.type === 'tool_use') {
@@ -337,7 +350,7 @@ export class AnthropicProvider extends BaseProvider {
           return {
             type: 'tool_result',
             tool_use_id: item.tool_use_id,
-            content: this.convertContent(item.content ?? ''),
+            content: this.convertToolResultContent(item.content ?? ''),
             is_error: item.is_error,
           };
         }
@@ -353,13 +366,9 @@ export class AnthropicProvider extends BaseProvider {
         return [
           {
             type: 'image',
-            source: {
-              type: content.source.type === 'url' ? 'url' : 'base64',
-              [content.source.type === 'url' ? 'url' : 'media_type']: content.source.type === 'url'
-                ? content.source.data
-                : content.source.media_type || 'image/png',
-              data: content.source.type === 'url' ? undefined : content.source.data,
-            },
+            source: content.source.type === 'url'
+              ? { type: 'url', url: content.source.data }
+              : { type: 'base64', media_type: (content.source.media_type || 'image/png') as Anthropic.Messages.Base64ImageSource['media_type'], data: content.source.data },
           },
         ];
       }
@@ -378,7 +387,7 @@ export class AnthropicProvider extends BaseProvider {
           {
             type: 'tool_result',
             tool_use_id: content.tool_use_id,
-            content: this.convertContent(content.content ?? ''),
+            content: this.convertToolResultContent(content.content ?? ''),
             is_error: content.is_error,
           },
         ];
@@ -389,12 +398,24 @@ export class AnthropicProvider extends BaseProvider {
   }
 
   /**
+   * Convert tool result content to Anthropic format
+   */
+  private convertToolResultContent(content: Message['content']): Anthropic.Messages.ToolResultBlockParam['content'] {
+    if (typeof content === 'string') {
+      return content;
+    }
+    // Convert to text-only array for tool results
+    const blocks = this.convertContent(content);
+    return blocks.filter((b): b is Anthropic.Messages.TextBlockParam => b.type === 'text');
+  }
+
+  /**
    * Parse content from Anthropic response
    *
    * @param content - Content from Anthropic
-   * @returns Parsed message content
+   * @returns Parsed message content (single or array)
    */
-  private parseContent(content: Anthropic.ContentBlock[]): MessageContent {
+  private parseContent(content: Anthropic.ContentBlock[]): MessageContent | MessageContent[] {
     if (content.length === 0) {
       return { type: 'text', text: '' };
     }
@@ -406,11 +427,34 @@ export class AnthropicProvider extends BaseProvider {
         return { type: 'text', text: block.text };
       }
 
-      return block as MessageContent;
+      // Map tool_use blocks to our format
+      if (block.type === 'tool_use') {
+        return {
+          type: 'tool_use',
+          id: block.id,
+          name: block.name,
+          input: block.input as Record<string, unknown>,
+        };
+      }
+
+      return { type: 'text', text: '' };
     }
 
-    // Multiple content blocks
-    return content as MessageContent[];
+    // Multiple content blocks - map each appropriately
+    return content.map((block): MessageContent => {
+      if (block.type === 'text') {
+        return { type: 'text', text: block.text };
+      }
+      if (block.type === 'tool_use') {
+        return {
+          type: 'tool_use',
+          id: block.id,
+          name: block.name,
+          input: block.input as Record<string, unknown>,
+        };
+      }
+      return { type: 'text', text: '' };
+    });
   }
 
   /**

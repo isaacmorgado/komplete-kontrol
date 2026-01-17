@@ -153,6 +153,12 @@ export interface LoggerLike {
   timeAsync<T>(operationName: string, fn: () => Promise<T>, context?: LogContext): Promise<TimerResult<T>>;
   timeWithError<T>(operationName: string, fn: () => Promise<T>, context?: LogContext): Promise<TimerResult<T>>;
   child(context: LogContext | string): LoggerLike;
+  // Optional Logger-specific properties for CLI and advanced use
+  config?: LoggerConfig;
+  getLogs?(): LogEntry[];
+  setLevel?(level: LogLevel): void;
+  getLevel?(): LogLevel;
+  getPath?(): string | undefined;
 }
 
 // ============================================================================
@@ -874,6 +880,13 @@ export class Logger implements LoggerLike {
    */
   getLevel(): LogLevel {
     return this.config.level;
+  }
+
+  /**
+   * Get current log file path
+   */
+  getPath(): string | undefined {
+    return this.currentLogFile || undefined;
   }
 
   /**

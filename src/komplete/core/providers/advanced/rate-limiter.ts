@@ -397,6 +397,14 @@ export class RateLimitedProvider implements AIProvider {
     return this.provider.name;
   }
 
+  get prefix(): import('../../../types').ProviderPrefix {
+    return this.provider.prefix;
+  }
+
+  get capabilities(): import('../../../types').ProviderCapabilities {
+    return this.provider.capabilities;
+  }
+
   async complete(
     model: string,
     messages: Message[],

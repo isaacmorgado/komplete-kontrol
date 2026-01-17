@@ -698,17 +698,20 @@ export class CLI {
         warn: LogLevel.WARN,
         error: LogLevel.ERROR,
       };
-      this.config.logger.config.level = levelMap[argv.logLevel] ?? this.config.logger.config.level;
+      const newLevel = levelMap[argv.logLevel];
+      if (newLevel !== undefined) {
+        this.config.logger.setLevel?.(newLevel);
+      }
     }
 
     // Verbose mode
     if (argv.verbose) {
-      this.config.logger.config.level = LogLevel.DEBUG;
+      this.config.logger.setLevel?.(LogLevel.DEBUG);
     }
 
     // Quiet mode
     if (argv.quiet) {
-      this.config.logger.config.level = LogLevel.ERROR;
+      this.config.logger.setLevel?.(LogLevel.ERROR);
     }
 
     // Load custom config
@@ -1450,9 +1453,9 @@ export class CLI {
   private async handleDebugLogs(): Promise<void> {
     this.config.logger.info('Showing logs', 'CLI');
 
-    const logs = this.config.logger.getLogs();
+    const logs = this.config.logger.getLogs?.() ?? [];
     console.log(chalk.cyan('Recent Logs:'));
-    logs.slice(-20).forEach((log) => {
+    logs.slice(-20).forEach((log: { timestamp: Date; level: LogLevel; message: string }) => {
       console.log(`[${log.timestamp.toISOString()}] ${LogLevel[log.level]}: ${log.message}`);
     });
   }
@@ -1465,8 +1468,9 @@ export class CLI {
 
     console.log(chalk.cyan('System Status:'));
     console.log(`  Version: 1.0.0`);
-    console.log(`  Config path: ${this.config.configManager.getPath() || 'Not loaded'}`);
-    console.log(`  Log level: ${LogLevel[this.config.logger.config.level]}`);
+    console.log(`  Config path: ${this.config.configManager.getUserConfigPath() || 'Not loaded'}`);
+    const logLevel = this.config.logger.getLevel?.() ?? LogLevel.INFO;
+    console.log(`  Log level: ${LogLevel[logLevel]}`);
     console.log(chalk.yellow('Full status not yet implemented'));
   }
 
@@ -1487,7 +1491,7 @@ export class CLI {
         url: argv.url,
         width: argv.width,
         height: argv.height,
-        waitForIdle: argv.waitIdle,
+        waitForNetworkIdle: argv.waitIdle,
         includeAccessibility: argv.accessibility,
       };
 
@@ -1765,7 +1769,7 @@ export class CLI {
         url: argv.url,
         width: argv.width,
         height: argv.height,
-        waitForIdle: true,
+        waitForNetworkIdle: true,
       });
 
       if ('close' in capturer && typeof (capturer as any).close === 'function') {
@@ -1787,7 +1791,8 @@ export class CLI {
         throw new Error(`Provider '${parsed.prefix}' not found`);
       }
 
-      if (!provider.getCapabilities().vision) {
+      const capabilities = provider.getCapabilities?.() ?? provider.capabilities;
+      if (!capabilities?.vision) {
         throw new Error(`Provider '${parsed.prefix}' does not support vision`);
       }
 
@@ -1795,7 +1800,7 @@ export class CLI {
 
       const options: GenerateCodeOptions = {
         stack: argv.stack as CodeStack,
-        model: parsed.model,
+        model: parsed.modelName,
         instructions: argv.instructions,
         responsive: argv.responsive,
         includeAccessibility: argv.accessibility,
@@ -1969,18 +1974,18 @@ export async function runCLI(): Promise<void> {
     await initializeProviders(
       {
         openai: {
-          apiKey: config.openai?.apiKey || process.env.OPENAI_API_KEY,
-          baseUrl: config.openai?.baseUrl,
-          defaultModel: config.openai?.defaultModel,
+          apiKey: config.providers?.openai?.apiKey || process.env.OPENAI_API_KEY,
+          baseUrl: config.providers?.openai?.baseUrl,
+          defaultModel: config.providers?.openai?.defaultModel,
         },
         anthropic: {
-          apiKey: config.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY,
-          baseUrl: config.anthropic?.baseUrl,
-          defaultModel: config.anthropic?.defaultModel,
+          apiKey: config.providers?.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY,
+          baseUrl: config.providers?.anthropic?.baseUrl,
+          defaultModel: config.providers?.anthropic?.defaultModel,
         },
         ollama: {
-          baseUrl: config.ollama?.baseUrl || 'http://localhost:11434',
-          defaultModel: config.ollama?.defaultModel,
+          baseUrl: config.providers?.ollama?.baseUrl || 'http://localhost:11434',
+          defaultModel: config.providers?.ollama?.defaultModel,
         },
       },
       logger

@@ -5,8 +5,13 @@
  * Extends the in-memory ResponseCache with persistence layer.
  */
 
-import { Database } from 'bun:sqlite';
+// Use better-sqlite3 for Node.js compatibility (Bun also supports this)
+import BetterSqlite3 from 'better-sqlite3';
+import type { Database as BetterSqlite3Database } from 'better-sqlite3';
 import { Logger, LoggerLike } from '../../../utils/logger';
+
+// Type alias for SQLite database
+type Database = BetterSqlite3Database;
 import type { CompletionResult, Message } from '../../../types';
 import { createHash } from 'crypto';
 
@@ -175,7 +180,7 @@ export class PersistentResponseCache {
     this.logger = logger?.child('PersistentResponseCache') ?? new Logger().child('PersistentResponseCache');
 
     // Initialize database
-    this.db = new Database(this.config.dbPath);
+    this.db = new BetterSqlite3(this.config.dbPath);
     this.initializeDatabase();
 
     // Start cleanup interval

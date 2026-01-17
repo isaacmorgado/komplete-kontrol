@@ -9,7 +9,7 @@ import type { LoggerLike } from '../utils/logger';
 import type { AIProvider } from '../types';
 import { ZeroDriftCapturer, type CaptureOptions, type CaptureResult } from './vision/zero-drift-capture';
 import { ScreenshotToCodeConverter, type GenerateCodeOptions, type CodeGenerationResult } from './screenshot-to-code/converter';
-import { HARAnalyzer, type AnalysisOptions, type NetworkAnalysis } from './network/har-analyzer';
+import { HARAnalyzer, type AnalysisResult } from './network/har-analyzer';
 
 /**
  * Complete web page analysis result
@@ -20,7 +20,7 @@ export interface WebPageAnalysis {
   /** Generated code (if requested) */
   code?: CodeGenerationResult;
   /** Network analysis (if HAR provided) */
-  network?: NetworkAnalysis;
+  network?: AnalysisResult;
   /** Analysis metadata */
   metadata: {
     /** Total analysis duration */
@@ -83,7 +83,11 @@ export class VisionWorkflow {
     });
 
     // Step 1: Capture screenshot and DOM
-    const captureResult = await this.capture.capture(options.url, options.capture);
+    const captureOptions: CaptureOptions = {
+      url: options.url,
+      ...options.capture,
+    };
+    const captureResult = await this.capture.capture(captureOptions);
 
     const result: WebPageAnalysis = {
       capture: captureResult,
@@ -107,17 +111,18 @@ export class VisionWorkflow {
       this.logger.info('Analyzing network traffic', 'VisionWorkflow', {
         harPath: options.harFilePath,
       });
-      result.network = await this.networkAnalyzer.analyzeHAR(
-        options.harFilePath,
-        options.networkAnalysis
-      );
+      // Load HAR file and analyze
+      const fs = await import('node:fs/promises');
+      const harContent = await fs.readFile(options.harFilePath, 'utf-8');
+      const harData = JSON.parse(harContent);
+      result.network = await this.networkAnalyzer.analyze(harData);
     }
 
     result.metadata.totalDurationMs = Date.now() - startTime;
 
     this.logger.info('Web page analysis completed', 'VisionWorkflow', {
       totalDurationMs: result.metadata.totalDurationMs,
-      capturedElements: captureResult.dom.totalElements,
+      domLength: captureResult.dom.length,
       codeGenerated: !!result.code,
       networkAnalyzed: !!result.network,
     });
@@ -148,7 +153,7 @@ export class VisionWorkflow {
     });
 
     // Capture screenshot
-    const capture = await this.capture.capture(url, captureOptions);
+    const capture = await this.capture.capture({ url, ...captureOptions });
 
     // Generate code
     const code = await this.codeConverter.generateCodeFromCapture(capture, codeOptions);
@@ -171,11 +176,10 @@ export class VisionWorkflow {
     harOutputPath: string,
     options?: {
       capture?: Partial<CaptureOptions>;
-      network?: Partial<AnalysisOptions>;
     }
   ): Promise<{
     capture: CaptureResult;
-    network: NetworkAnalysis;
+    network: AnalysisResult;
   }> {
     this.logger.info('Starting capture with network workflow', 'VisionWorkflow', {
       url,
@@ -184,23 +188,24 @@ export class VisionWorkflow {
 
     // Capture screenshot with HAR recording
     const captureOptions: CaptureOptions = {
+      url,
       ...options?.capture,
       waitForNetworkIdle: true,
       recordHAR: true,
       harPath: harOutputPath,
     };
 
-    const capture = await this.capture.capture(url, captureOptions);
+    const capture = await this.capture.capture(captureOptions);
 
-    // Analyze captured network traffic
-    const network = await this.networkAnalyzer.analyzeHAR(
-      harOutputPath,
-      options?.network
-    );
+    // Load and analyze captured network traffic
+    const fs = await import('node:fs/promises');
+    const harContent = await fs.readFile(harOutputPath, 'utf-8');
+    const harData = JSON.parse(harContent);
+    const network = await this.networkAnalyzer.analyze(harData);
 
     this.logger.info('Capture with network workflow completed', 'VisionWorkflow', {
-      totalRequests: network.summary.totalRequests,
-      apis: network.apis.length,
+      totalRequests: network.metrics.totalRequests,
+      apis: network.endpoints.length,
     });
 
     return { capture, network };
@@ -216,7 +221,6 @@ export class VisionWorkflow {
     intervalMs: number = 5000,
     options?: {
       capture?: Partial<CaptureOptions>;
-      network?: Partial<AnalysisOptions>;
     }
   ): AsyncGenerator<{
     timestamp: number;
@@ -235,7 +239,7 @@ export class VisionWorkflow {
 
     while (true) {
       const timestamp = Date.now();
-      const capture = await this.capture.capture(url, options?.capture);
+      const capture = await this.capture.capture({ url, ...options?.capture });
 
       const result: {
         timestamp: number;
@@ -252,7 +256,7 @@ export class VisionWorkflow {
       // Detect changes from previous capture
       if (previousCapture) {
         result.changes = {
-          domChanged: capture.dom.totalElements !== previousCapture.dom.totalElements,
+          domChanged: capture.dom !== previousCapture.dom,
           visualChanged: capture.screenshot !== previousCapture.screenshot,
         };
       }

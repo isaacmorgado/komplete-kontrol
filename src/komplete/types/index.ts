@@ -643,26 +643,40 @@ export interface ToolRecommendation {
 export interface ContextOptimizationResult {
   optimizedMessages: ContextMessage[];
   removedCount: number;
-  preservedCount: number;
-  summaryCount: number;
-  tokenSavings: number;
-  compressionRatio: number;
+  preservedCount?: number;
+  summaryCount?: number;
+  tokenSavings?: number;
+  compressionRatio?: number;
   /** Original messages before optimization */
   originalMessages?: ContextMessage[];
   /** Reduction percentage (0-100) */
   reductionPercentage?: number;
+  /** Original token count */
+  originalTokenCount?: number;
+  /** Optimized token count */
+  optimizedTokenCount?: number;
+  /** Token reduction amount */
+  tokenReduction?: number;
+  /** Processing time in ms */
+  processingTime?: number;
 }
 
 /**
  * Context optimization configuration
  */
 export interface ContextOptimizationConfig {
-  aggressiveMode: boolean;
-  preserveSystemMessages: boolean;
-  preserveToolResults: boolean;
-  minMessageAge: number;
-  maxSummaryLength: number;
-  deduplicateContent: boolean;
+  /** Aggressive optimization mode */
+  aggressiveMode?: boolean;
+  /** Preserve system messages */
+  preserveSystemMessages?: boolean;
+  /** Preserve tool results */
+  preserveToolResults?: boolean;
+  /** Minimum message age before optimization */
+  minMessageAge?: number;
+  /** Maximum summary length */
+  maxSummaryLength?: number;
+  /** Deduplicate identical content */
+  deduplicateContent?: boolean;
   /** Enable deduplication optimization */
   enableDeduplication?: boolean;
   /** Enable relevance scoring */
