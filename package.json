@@ -1,13 +1,14 @@
 {
   "name": "komplete-kontrol",
   "version": "1.0.0-alpha.1",
-  "description": "AI Coding Agent with Universal Tool Calling, Mode System, and Multi-Model Support",
+  "description": "AI Coding Agent with Universal Tool Calling and Multi-Modal Orchestration",
   "main": "dist/main/index.js",
   "author": {
     "name": "Isaac Morgado",
     "email": "isaac@komplete-kontrol.ai"
   },
-  "license": "AGPL 3.0",
+  "license": "AGPL-3.0",
+  "homepage": "https://github.com/isaacmorgado/komplete-kontrol",
   "repository": {
     "type": "git",
     "url": "https://github.com/isaacmorgado/komplete-kontrol.git"

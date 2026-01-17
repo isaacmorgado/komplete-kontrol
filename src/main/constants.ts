@@ -1,12 +1,38 @@
 /**
  * Main process constants
  *
- * Centralized constants used across the main process for Claude session parsing,
- * API pricing, and demo mode detection.
+ * Centralized constants used across the main process for app identity,
+ * Claude session parsing, API pricing, and demo mode detection.
  */
 
 import path from 'path';
 import os from 'os';
+import { readFileSync } from 'fs';
+
+/**
+ * Application identity constants
+ */
+export const APP_NAME = 'Komplete-Kontrol';
+export const APP_ID = 'com.komplete-kontrol.app';
+
+/**
+ * Application version read from package.json
+ */
+function getAppVersion(): string {
+  try {
+    const packagePath = path.join(__dirname, '..', '..', 'package.json');
+    const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'));
+    return packageJson.version || '1.0.0';
+  } catch {
+    return '1.0.0';
+  }
+}
+export const APP_VERSION = getAppVersion();
+
+/**
+ * Development environment flag
+ */
+export const IS_DEV = process.env.NODE_ENV === 'development';
 
 /**
  * Demo mode flag - enables isolated data directory for fresh demos
