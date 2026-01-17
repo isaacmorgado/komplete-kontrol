@@ -25,6 +25,7 @@ Deep technical documentation for Maestro's architecture and design patterns. For
 - [Shared Module](#shared-module)
 - [Remote Access & Tunnels](#remote-access--tunnels)
 - [Error Handling Patterns](#error-handling-patterns)
+- [Komplete Subsystem](#komplete-subsystem)
 
 ---
 
@@ -1566,3 +1567,588 @@ const handleFileLoad = async (path: string) => {
 | ProcessManager | Throw spawn failures, emit runtime events |
 | Components | Try-catch async, show UI errors |
 | Hooks | Internal catch, expose error state |
+
+---
+
+## Komplete Subsystem
+
+The Komplete subsystem (`src/komplete/`) extends Maestro with advanced AI capabilities: operational modes, multi-provider architecture, universal tool calling, and context optimization.
+
+### Directory Structure
+
+```
+src/komplete/
+├── types/                    # Type definitions
+│   ├── index.ts             # Core types (Message, Tool, Agent, Provider)
+│   ├── globals.d.ts         # Bun type declarations for Node.js compatibility
+│   └── bun-shim.ts          # Node.js fallback implementations
+│
+├── config/                   # Configuration management
+│   └── index.ts             # ConfigManager with layered config support
+│
+├── utils/                    # Utilities
+│   ├── logger.ts            # Structured logging with context, rotation, timing
+│   └── error-handler.ts     # Error classification and recovery suggestions
+│
+├── core/                     # Core functionality
+│   ├── providers/           # AI provider implementations
+│   │   ├── base.ts          # BaseProvider abstract class
+│   │   ├── anthropic.ts     # Anthropic Claude provider
+│   │   ├── openai.ts        # OpenAI provider
+│   │   ├── ollama.ts        # Ollama local provider
+│   │   ├── router.ts        # Model routing logic
+│   │   ├── registry.ts      # Provider registry
+│   │   └── advanced/        # Advanced provider features
+│   │       ├── caching.ts           # Response caching
+│   │       ├── cost-tracker.ts      # Cost tracking
+│   │       ├── embeddings.ts        # Embedding generation
+│   │       ├── fallback.ts          # Provider fallback chains
+│   │       ├── load-balancer.ts     # Load balancing
+│   │       ├── persistent-cache.ts  # Persistent response cache
+│   │       ├── rate-limiter.ts      # Rate limiting
+│   │       ├── streaming.ts         # Streaming responses
+│   │       └── token-counter.ts     # Token counting
+│   │
+│   ├── agents/              # Agent management
+│   │   ├── executor.ts      # Agent execution engine
+│   │   ├── registry.ts      # Agent registry
+│   │   ├── orchestrator.ts  # Multi-agent orchestration
+│   │   ├── coordination.ts  # Agent coordination patterns
+│   │   ├── communication.ts # Inter-agent communication
+│   │   ├── hierarchy.ts     # Agent hierarchy management
+│   │   ├── lifecycle.ts     # Agent lifecycle management
+│   │   ├── patterns.ts      # Common agent patterns
+│   │   ├── teams.ts         # Agent team coordination
+│   │   ├── workflows.ts     # Multi-step workflows
+│   │   ├── mcp-integration.ts # MCP tool integration
+│   │   ├── test-agents.ts   # Test agent implementations
+│   │   └── vision-agents.ts # Vision-capable agents
+│   │
+│   ├── context/             # Context management
+│   │   ├── window.ts        # Context window management
+│   │   ├── optimization.ts  # Context optimization strategies
+│   │   ├── condensation.ts  # Message condensation
+│   │   ├── enhanced-condensation.ts # Advanced condensation
+│   │   ├── memory.ts        # Memory management
+│   │   ├── memory-file.ts   # File-based memory storage
+│   │   ├── session.ts       # Session context
+│   │   ├── multi-session.ts # Multi-session management
+│   │   ├── tokens.ts        # Token utilities
+│   │   ├── tool-selection.ts # Dynamic tool selection
+│   │   └── contextignore.ts # .contextignore support
+│   │
+│   ├── tasks/               # Task management
+│   │   ├── executor.ts      # Task execution
+│   │   ├── planner.ts       # Task planning
+│   │   ├── aggregator.ts    # Result aggregation
+│   │   └── dependency-resolver.ts # Task dependencies
+│   │
+│   ├── commands/            # Slash command system
+│   │   ├── parser.ts        # Command parsing
+│   │   ├── registry.ts      # Command registry
+│   │   └── types.ts         # Command types
+│   │
+│   ├── healing/             # Self-healing capabilities
+│   │   ├── loop.ts          # Self-healing loop
+│   │   ├── validation.ts    # Output validation
+│   │   ├── suggestions.ts   # Fix suggestions
+│   │   ├── patterns.ts      # Error patterns
+│   │   ├── stderr-parser.ts # Stderr parsing
+│   │   ├── linter-integration.ts # Linter integration
+│   │   ├── repl-interface.ts # REPL interface
+│   │   ├── runtime-supervisor.ts # Runtime supervision
+│   │   └── shadow-mode.ts   # Shadow execution mode
+│   │
+│   ├── indexing/            # Codebase indexing
+│   │   ├── structure.ts     # Code structure analysis
+│   │   ├── dependencies.ts  # Dependency analysis
+│   │   ├── tree-sitter.ts   # Tree-sitter integration
+│   │   └── context-stuffing.ts # Intelligent context inclusion
+│   │
+│   └── hooks/               # Event hooks
+│       └── index.ts         # Hook system
+│
+├── mcp/                      # Model Context Protocol
+│   ├── client.ts            # MCP client implementation
+│   ├── registry.ts          # MCP server registry
+│   ├── discovery.ts         # Server discovery
+│   ├── stdio-bridge.ts      # STDIO transport bridge
+│   ├── result-handler.ts    # Result processing
+│   ├── agent-executor.ts    # MCP-enabled agent execution
+│   ├── types.ts             # MCP type definitions
+│   └── servers/             # MCP server implementations
+│       └── echo-server.ts   # Example echo server
+│
+├── integrations/             # External integrations
+│   ├── vision/              # Vision capabilities
+│   │   ├── zero-drift-capture.ts # Stable screenshot capture
+│   │   └── dom-extractor.ts      # DOM extraction
+│   ├── screenshot-to-code/  # Screenshot to code conversion
+│   │   └── converter.ts     # Image-to-code converter
+│   ├── network/             # Network integrations
+│   │   └── har-analyzer.ts  # HAR file analysis
+│   └── vision-workflow.ts   # Vision workflow orchestration
+│
+└── cli/                      # Komplete CLI
+    ├── index.ts             # CLI entry point
+    └── chat.ts              # Interactive chat mode
+```
+
+### Core Type System
+
+#### Message Types
+
+```typescript
+// Core message structure
+interface Message {
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string | MessageContent[];
+}
+
+// Multi-modal content
+type MessageContent =
+  | { type: 'text'; text: string }
+  | { type: 'image'; source: ImageSource }
+  | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+  | { type: 'tool_result'; tool_use_id: string; content: string };
+
+// Tool calling
+interface ToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
+interface ToolResult {
+  toolCallId: string;
+  success: boolean;
+  content: string;
+  error?: string;
+}
+```
+
+#### Agent Types
+
+```typescript
+// Agent state lifecycle
+enum AgentState {
+  Idle = 'idle',
+  Thinking = 'thinking',
+  Executing = 'executing',
+  Error = 'error',
+  Complete = 'complete'
+}
+
+// Agent capabilities
+interface AgentCapabilities {
+  fileRead: boolean;
+  fileWrite: boolean;
+  shellExec: boolean;
+  webBrowse: boolean;
+  mcpTools: boolean;
+  subAgents: boolean;
+  vision: boolean;
+  streaming: boolean;
+}
+
+// Agent runtime context
+interface AgentContext {
+  sessionId: string;
+  agentId: string;
+  mode: OperationalMode;
+  state: AgentState;
+  capabilities: AgentCapabilities;
+  messages: Message[];
+  tools: Tool[];
+  config: AgentConfig;
+}
+```
+
+#### Mode Types
+
+```typescript
+// Operational modes
+type OperationalMode =
+  | 'architect'        // System design, high-level planning
+  | 'code'             // Implementation, coding
+  | 'debug'            // Debugging, troubleshooting
+  | 'test'             // Testing, validation
+  | 'reverse-engineer' // Analysis, understanding
+  | 'ask'              // Q&A, general assistance
+
+// Tool groups per mode
+type ToolGroup = 'read' | 'edit' | 'browser' | 'command' | 'mcp' | 'modes';
+
+// Mode configuration
+interface OperationalModeConfig {
+  slug: OperationalMode;
+  roleDefinition: string;
+  toolGroups: ToolGroup[];
+  preferredModel?: string;
+  temperature?: number;
+  maxTokens?: number;
+}
+```
+
+### Configuration System
+
+#### Layered Configuration
+
+Configuration merges three layers (later overrides earlier):
+
+1. **User config**: `~/.komplete-kontrol/config.json`
+2. **Project config**: `.komplete-kontrol.json` in project root
+3. **Environment variables**: `KOMPLETE_*` prefix
+
+```typescript
+// ConfigManager usage
+import { getConfig } from '@komplete/config';
+
+const config = getConfig();
+
+// Access nested values
+const model = config.get('defaultModel');
+const apiKey = config.get('providers.anthropic.apiKey');
+
+// Environment variable support
+// KOMPLETE_DEFAULT_MODE=architect → config.defaultMode
+// KOMPLETE_PROVIDERS_ANTHROPIC_API_KEY=xxx → config.providers.anthropic.apiKey
+```
+
+#### Provider Configuration
+
+```typescript
+interface ProviderConfig {
+  apiKey?: string;
+  baseUrl?: string;
+  organization?: string;
+  defaultModel?: string;
+  timeout?: number;
+  headers?: Record<string, string>;
+}
+
+// Supported providers
+const providers = [
+  'anthropic',   // Claude models
+  'openai',      // GPT models
+  'ollama',      // Local models
+  'featherless', // Featherless.ai
+  'openRouter',  // OpenRouter
+  'groq'         // Groq
+];
+```
+
+### Provider System
+
+#### BaseProvider
+
+All providers extend `BaseProvider`:
+
+```typescript
+abstract class BaseProvider implements AIProvider {
+  public capabilities: ModelCapabilities;
+
+  abstract complete(messages: Message[], options?: CompletionOptions): Promise<CompletionResult>;
+  abstract streamComplete(messages: Message[], options?: CompletionOptions): AsyncIterable<StreamChunk>;
+
+  // Optional capability query
+  getCapabilities?(): ModelCapabilities;
+}
+```
+
+#### Provider Features
+
+| Feature | Description | Implementation |
+|---------|-------------|----------------|
+| Caching | Response caching | `advanced/caching.ts` |
+| Fallback | Provider chain fallback | `advanced/fallback.ts` |
+| Rate Limiting | Token bucket rate limiting | `advanced/rate-limiter.ts` |
+| Load Balancing | Multi-provider load balancing | `advanced/load-balancer.ts` |
+| Cost Tracking | Usage and cost tracking | `advanced/cost-tracker.ts` |
+| Token Counting | Accurate token counting | `advanced/token-counter.ts` |
+| Streaming | Streaming response support | `advanced/streaming.ts` |
+| Embeddings | Text embeddings | `advanced/embeddings.ts` |
+
+### MCP Integration
+
+The Model Context Protocol (MCP) enables tool discovery and execution:
+
+```typescript
+// MCP client usage
+import { MCPClient } from '@komplete/mcp/client';
+
+const client = new MCPClient({
+  serverPath: '/path/to/mcp-server',
+  transportType: 'stdio'
+});
+
+await client.connect();
+const tools = await client.listTools();
+const result = await client.callTool('tool-name', { arg: 'value' });
+```
+
+#### MCP Server Discovery
+
+```typescript
+// Auto-discover MCP servers
+import { discoverServers } from '@komplete/mcp/discovery';
+
+const servers = await discoverServers({
+  searchPaths: ['~/.mcp/servers', './.mcp'],
+  includeGlobal: true
+});
+```
+
+### Context Management
+
+#### Context Window
+
+```typescript
+// Context window management
+import { ContextWindow } from '@komplete/core/context/window';
+
+const window = new ContextWindow({
+  maxTokens: 200000,
+  reservedTokens: 4096  // For response
+});
+
+window.addMessage(message);
+const optimized = await window.optimize();
+```
+
+#### Context Optimization
+
+Strategies for fitting content in context windows:
+
+| Strategy | Description |
+|----------|-------------|
+| Condensation | Summarize older messages |
+| Tool Selection | Dynamically include relevant tools |
+| Memory | External memory storage |
+| Chunking | Split large content |
+
+### Logging System
+
+#### Structured Logging
+
+```typescript
+import { Logger, LogLevel, initLogger } from '@komplete/utils/logger';
+
+// Initialize global logger
+initLogger({
+  level: LogLevel.INFO,
+  fileOutput: {
+    enabled: true,
+    directory: '~/.komplete-kontrol/logs',
+    rotation: { maxSize: 10 * 1024 * 1024, maxFiles: 5 }
+  }
+});
+
+// Create scoped logger
+const logger = createLogger('component-name');
+logger.info('Operation started', { sessionId: 'xxx', mode: 'code' });
+
+// Performance timing
+const result = await logger.timeAsync('operation', async () => {
+  return await expensiveOperation();
+});
+// Logs: "operation completed in 150ms"
+```
+
+#### Log Context
+
+```typescript
+interface LogContext {
+  sessionId?: string;
+  agentId?: string;
+  mode?: OperationalMode;
+  component?: string;
+  requestId?: string;
+  spanId?: string;
+  parentSpanId?: string;
+  [key: string]: unknown;  // Custom fields
+}
+```
+
+### Error Handling
+
+#### Error Types
+
+```typescript
+// Base error class
+class KompleteError extends Error {
+  code: string;
+  context?: Record<string, unknown>;
+}
+
+// Specialized errors
+class ProviderError extends KompleteError { ... }
+class ToolError extends KompleteError { ... }
+class ModeError extends KompleteError { ... }
+class ConfigError extends KompleteError { ... }
+class AgentError extends KompleteError { ... }
+class ContextError extends KompleteError { ... }
+```
+
+#### Recovery Suggestions
+
+```typescript
+import { getRecoverySuggestions } from '@komplete/utils/error-handler';
+
+const suggestions = getRecoverySuggestions(error);
+// Returns:
+// {
+//   code: 'RATE_LIMIT_ERROR',
+//   severity: 'MEDIUM',
+//   strategy: 'RETRY',
+//   suggestions: [
+//     { message: 'Wait and retry', autoApplicable: true },
+//     { message: 'Switch to fallback provider', autoApplicable: false }
+//   ]
+// }
+```
+
+### IPC Bridge (`window.komplete`)
+
+The preload script exposes `window.komplete` for renderer access:
+
+```typescript
+window.komplete = {
+  // Mode management
+  modes: {
+    getCurrent(): Promise<OperationalMode>;
+    switch(mode: OperationalMode): Promise<void>;
+    getAll(): Promise<OperationalModeConfig[]>;
+  },
+
+  // Tool discovery
+  tools: {
+    getAvailable(): Promise<Tool[]>;
+  },
+
+  // Provider management
+  providers: {
+    list(): Promise<ProviderInfo[]>;
+  },
+
+  // Configuration
+  config: {
+    get(key: string): Promise<unknown>;
+    set(key: string, value: unknown): Promise<void>;
+  }
+};
+```
+
+### Self-Healing System
+
+The healing system automatically recovers from errors:
+
+```typescript
+// Healing loop
+import { SelfHealingLoop } from '@komplete/core/healing/loop';
+
+const loop = new SelfHealingLoop({
+  maxRetries: 3,
+  validators: [linterValidator, typeCheckValidator],
+  suggestors: [errorPatternSuggestor]
+});
+
+const result = await loop.execute(async () => {
+  return await agent.run(task);
+});
+```
+
+#### Healing Components
+
+| Component | Purpose |
+|-----------|---------|
+| `loop.ts` | Self-healing execution loop |
+| `validation.ts` | Output validation |
+| `suggestions.ts` | Fix suggestions |
+| `patterns.ts` | Error pattern matching |
+| `stderr-parser.ts` | Parse stderr for errors |
+| `linter-integration.ts` | ESLint/TSC integration |
+| `shadow-mode.ts` | Test changes in shadow branch |
+
+### Vision Integration
+
+Vision capabilities for screenshot-based workflows:
+
+```typescript
+// Zero-drift capture (stable screenshots)
+import { ZeroDriftCapture } from '@komplete/integrations/vision/zero-drift-capture';
+
+const capture = new ZeroDriftCapture();
+const screenshot = await capture.capture({
+  waitForIdle: true,
+  fullPage: false
+});
+
+// Screenshot to code
+import { ScreenshotToCode } from '@komplete/integrations/screenshot-to-code/converter';
+
+const converter = new ScreenshotToCode(provider);
+const code = await converter.convert(screenshot, {
+  framework: 'react',
+  styling: 'tailwind'
+});
+```
+
+### Codebase Indexing
+
+Intelligent codebase understanding:
+
+```typescript
+// Structure analysis
+import { analyzeStructure } from '@komplete/core/indexing/structure';
+
+const structure = await analyzeStructure(projectRoot);
+// Returns: file tree, exports, imports, dependencies
+
+// Context stuffing
+import { stuffContext } from '@komplete/core/indexing/context-stuffing';
+
+const relevantFiles = await stuffContext({
+  query: 'authentication system',
+  maxTokens: 50000
+});
+```
+
+### Usage in Main Process
+
+IPC handlers for Komplete are registered in `src/main/ipc/handlers/komplete.ts`:
+
+```typescript
+// Handler registration
+import { registerKompleteHandlers } from './handlers/komplete';
+
+registerKompleteHandlers(ipcMain, settingsStore);
+
+// Available channels:
+// komplete:mode:get-current
+// komplete:mode:switch
+// komplete:mode:get-all
+// komplete:tools:get-available
+// komplete:providers:list
+// komplete:config:get
+// komplete:config:set
+```
+
+### Test Coverage
+
+Komplete has comprehensive test coverage:
+
+```bash
+# Run all komplete tests
+npm run test:komplete
+
+# Watch mode
+npm run test:komplete:watch
+```
+
+| Test Suite | Location | Tests |
+|------------|----------|-------|
+| Logger | `src/__tests__/komplete/utils/logger.test.ts` | 63 |
+| Error Handler | `src/__tests__/komplete/utils/error-handler.test.ts` | 55 |
+| Config | `src/__tests__/komplete/config/` | 30 |
+| Total | - | 148+ |
