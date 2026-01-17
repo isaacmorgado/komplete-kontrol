@@ -2,13 +2,15 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "lib": ["ES2020", "ES2023", "DOM", "DOM.Iterable"]
   },
   "include": [
     "src/renderer",
     "src/shared",
     "src/web",
     "src/types",
-    "src/komplete"
+    "src/komplete",
+    "src/komplete/types/globals.d.ts"
   ]
 }

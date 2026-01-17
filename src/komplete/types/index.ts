@@ -61,15 +61,14 @@ export type ContentType = 'text' | 'image' | 'tool_use' | 'tool_result';
 
 /**
  * Base message content interface
+ * This is a discriminated union type for proper narrowing in TypeScript
  */
-export interface MessageContent {
-  type: ContentType;
-}
+export type MessageContent = TextContent | ImageContent | ToolUseContent | ToolResultContent;
 
 /**
  * Text content
  */
-export interface TextContent extends MessageContent {
+export interface TextContent {
   type: 'text';
   text: string;
 }
@@ -77,7 +76,7 @@ export interface TextContent extends MessageContent {
 /**
  * Image content
  */
-export interface ImageContent extends MessageContent {
+export interface ImageContent {
   type: 'image';
   source: {
     type: 'url' | 'base64';
@@ -89,7 +88,7 @@ export interface ImageContent extends MessageContent {
 /**
  * Tool use content
  */
-export interface ToolUseContent extends MessageContent {
+export interface ToolUseContent {
   type: 'tool_use';
   id: string;
   name: string;
@@ -99,10 +98,10 @@ export interface ToolUseContent extends MessageContent {
 /**
  * Tool result content
  */
-export interface ToolResultContent extends MessageContent {
+export interface ToolResultContent {
   type: 'tool_result';
   tool_use_id: string;
-  content?: string | Array<MessageContent>;
+  content?: string | Array<TextContent | ImageContent | ToolUseContent>;
   is_error?: boolean;
 }
 
@@ -346,6 +345,10 @@ export interface StreamChunk {
     outputTokens: number;
     totalTokens: number;
   };
+  /** Stream metadata */
+  metadata?: Record<string, unknown>;
+  /** Tokens streamed so far */
+  tokens?: number;
 }
 
 /**
@@ -641,6 +644,10 @@ export interface ContextOptimizationResult {
   summaryCount: number;
   tokenSavings: number;
   compressionRatio: number;
+  /** Original messages before optimization */
+  originalMessages?: ContextMessage[];
+  /** Reduction percentage (0-100) */
+  reductionPercentage?: number;
 }
 
 /**
@@ -653,6 +660,18 @@ export interface ContextOptimizationConfig {
   minMessageAge: number;
   maxSummaryLength: number;
   deduplicateContent: boolean;
+  /** Enable deduplication optimization */
+  enableDeduplication?: boolean;
+  /** Enable relevance scoring */
+  enableRelevanceScoring?: boolean;
+  /** Maximum tokens to allow */
+  maxTokens?: number;
+  /** Target tokens after optimization */
+  targetTokens?: number;
+  /** Minimum relevance score threshold */
+  minRelevanceScore?: number;
+  /** Preserve this many recent messages */
+  preserveRecentMessages?: number;
 }
 
 /**
@@ -1039,6 +1058,39 @@ export class ModeError extends KompleteError {
 }
 
 /**
+ * Task execution result
+ */
+export interface TaskResult<T = unknown> {
+  /** Whether the task completed successfully */
+  success: boolean;
+  /** Result data if successful */
+  data?: T;
+  /** Error if failed */
+  error?: Error;
+  /** Task ID */
+  taskId?: string;
+  /** Duration in milliseconds */
+  durationMs?: number;
+  /** Metadata from execution */
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Task execution error
+ */
+export class TaskError extends KompleteError {
+  constructor(
+    message: string,
+    public taskId: string,
+    public code: string = 'TASK_ERROR',
+    details?: Record<string, unknown>
+  ) {
+    super(message, code, { ...details, taskId });
+    this.name = 'TaskError';
+  }
+}
+
+/**
  * Record of a tool call during agent execution
  */
 export interface ToolCallRecord {
@@ -1181,3 +1233,6 @@ export interface AgentExecutorConfig {
    */
   temperature: number;
 }
+
+// Re-export Timer type from bun-shim for compatibility
+export type { Timer } from './bun-shim';

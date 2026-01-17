@@ -255,6 +255,7 @@
     "ws": "^8.16.0"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@electron/notarize": "^3.1.1",
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.57.0",
@@ -265,6 +266,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/canvas-confetti": "^1.9.0",
     "@types/electron-devtools-installer": "^2.2.5",
+    "@types/glob": "^8.1.0",
     "@types/node": "^20.10.6",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18.2.47",
@@ -292,6 +294,7 @@
     "globals": "^16.5.0",
     "jsdom": "^27.2.0",
     "lucide-react": "^0.303.0",
+    "openai": "^6.16.0",
     "playwright": "^1.57.0",
     "postcss": "^8.4.33",
     "prettier": "^3.8.0",

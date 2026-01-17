@@ -6,8 +6,8 @@
  */
 
 // Tree-sitter Integration
-export {
-  TreeSitterIntegration,
+export { TreeSitterIntegration, initTreeSitter, getTreeSitter } from './tree-sitter';
+export type {
   Language,
   NodeType,
   ASTNode,
@@ -15,15 +15,13 @@ export {
   NodeRange,
   ParseResult,
   ParseOptions,
-  initTreeSitter,
-  getTreeSitter,
 } from './tree-sitter';
 
 export { ParseOptionsSchema } from './tree-sitter';
 
 // Code Structure Understanding
-export {
-  CodeStructureUnderstanding,
+export { CodeStructureUnderstanding, initCodeStructure, getCodeStructure } from './structure';
+export type {
   SymbolType,
   Visibility,
   CodeSymbol,
@@ -32,15 +30,13 @@ export {
   Dependency,
   DependencyType,
   StructureAnalysisOptions,
-  initCodeStructure,
-  getCodeStructure,
 } from './structure';
 
 export { StructureAnalysisOptionsSchema } from './structure';
 
 // Dependency Graph Queries
-export {
-  DependencyGraphQueries,
+export { DependencyGraphQueries, initDependencyGraphQueries, getDependencyGraphQueries } from './dependencies';
+export type {
   GraphNodeType,
   GraphEdgeType,
   GraphNode,
@@ -50,15 +46,13 @@ export {
   ImpactAnalysis,
   CycleDetection,
   GraphQueryOptions,
-  initDependencyGraphQueries,
-  getDependencyGraphQueries,
 } from './dependencies';
 
 export { GraphQueryOptionsSchema } from './dependencies';
 
 // Smart Context Stuffing
-export {
-  SmartContextStuffing,
+export { SmartContextStuffing, initSmartContextStuffing, getSmartContextStuffing } from './context-stuffing';
+export type {
   ContextItemType,
   ContextPriority,
   ContextItem,
@@ -66,8 +60,6 @@ export {
   ContextStuffingOptions,
   ContextStuffingResult,
   RelevanceFactors,
-  initSmartContextStuffing,
-  getSmartContextStuffing,
 } from './context-stuffing';
 
 export { ContextStuffingOptionsSchema } from './context-stuffing';

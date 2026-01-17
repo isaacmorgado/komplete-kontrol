@@ -138,6 +138,23 @@ export interface TimerResult<T> {
   endTime: Date;
 }
 
+/**
+ * Common interface for Logger and ContextLogger
+ * Allows code to accept either type interchangeably
+ * Uses flexible signatures to accommodate both Logger and ContextLogger method patterns
+ */
+export interface LoggerLike {
+  debug(message: string, ...args: unknown[]): void;
+  info(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  error(message: string, ...args: unknown[]): void;
+  startTimer(operationName: string, context?: LogContext): () => void;
+  time<T>(operationName: string, fn: () => T, context?: LogContext): TimerResult<T>;
+  timeAsync<T>(operationName: string, fn: () => Promise<T>, context?: LogContext): Promise<TimerResult<T>>;
+  timeWithError<T>(operationName: string, fn: () => Promise<T>, context?: LogContext): Promise<TimerResult<T>>;
+  child(context: LogContext | string): LoggerLike;
+}
+
 // ============================================================================
 // Constants
 // ============================================================================
@@ -231,7 +248,7 @@ function safeStringify(data: unknown, maxLength: number = DEFAULT_MAX_DATA_LENGT
 /**
  * Enhanced Logger class with structured logging, file output, rotation, and timing
  */
-export class Logger {
+export class Logger implements LoggerLike {
   public config: LoggerConfig;
   private logs: LogEntry[] = [];
   private fileStream: fs.WriteStream | null = null;
@@ -888,7 +905,7 @@ export class Logger {
 /**
  * Child logger with pre-set context
  */
-export class ContextLogger {
+export class ContextLogger implements LoggerLike {
   constructor(
     private parent: Logger,
     private context: LogContext,
@@ -953,7 +970,7 @@ export class ContextLogger {
   /**
    * Create child logger with combined context
    */
-  child(childContext: LogContext | string): ContextLogger {
+  child(childContext: LogContext | string): LoggerLike {
     const ctx = typeof childContext === 'string' ? { component: childContext } : childContext;
     return new ContextLogger(this.parent, { ...this.context, ...ctx });
   }
@@ -1006,3 +1023,9 @@ export function createLogger(context: LogContext | string): ContextLogger {
 export function createSessionLogger(sessionId: string, agentId: string, mode?: string): ContextLogger {
   return getLogger().child({ sessionId, agentId, mode });
 }
+
+/**
+ * Type alias for code that expects Logger but receives ContextLogger
+ * Both Logger and ContextLogger implement LoggerLike
+ */
+export type AnyLogger = Logger | ContextLogger;
