@@ -123,7 +123,7 @@ export class CLI {
     }
     // Initialize model router if not provided
     if (!this.config.modelRouter) {
-      this.config.modelRouter = getModelRouter(undefined, this.config.logger);
+      this.config.modelRouter = getModelRouter();
     }
     // Initialize MCP registry if not provided
     if (!this.config.mcpRegistry) {

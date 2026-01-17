@@ -8,6 +8,7 @@
     "src/renderer",
     "src/shared",
     "src/web",
-    "src/types"
+    "src/types",
+    "src/komplete"
   ]
 }

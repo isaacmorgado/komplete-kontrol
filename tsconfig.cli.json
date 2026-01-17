@@ -14,9 +14,13 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "declaration": false,
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@komplete/*": ["src/komplete/*"]
+    }
   },
-  // CLI uses shared types, prompts for auto-run synopsis, and types for module declarations
-  "include": ["src/cli/**/*", "src/shared/**/*", "src/prompts/**/*", "src/types/**/*"],
+  // CLI uses shared types, prompts for auto-run synopsis, types for module declarations, and komplete
+  "include": ["src/cli/**/*", "src/shared/**/*", "src/prompts/**/*", "src/types/**/*", "src/komplete/**/*"],
   "exclude": ["node_modules", "dist", "release"]
 }
