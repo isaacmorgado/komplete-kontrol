@@ -1,6 +1,6 @@
 # 🗂️ Project Structure: .
 
-**Generated**: 2026-01-18 20:22:49
+**Generated**: 2026-01-18 20:28:43
 **Purpose**: Quick navigation reference for Claude (token-efficient)
 
 ---
@@ -1886,7 +1886,7 @@
 • JavaScript/TypeScript: 57150 files
 • Python: 75 files
 
-**Estimated LOC:** 572750
+**Estimated LOC:** 572760
 
 
 ---

@@ -883,6 +883,20 @@ app.whenReady().then(async () => {
     logger.warn('Continuing without skills - skills system will be unavailable', 'Startup');
   }
 
+  // Initialize RE database (seed if empty)
+  logger.info('Initializing RE database', 'Startup');
+  try {
+    const { DatabaseSeeder } = await import('./re/seed-database');
+    const seeder = new DatabaseSeeder();
+    await seeder.seed();
+    logger.info('RE database initialized', 'Startup');
+  } catch (error) {
+    // RE DB initialization failed - log error but continue with app startup
+    // RE features will be unavailable but the app will still function
+    logger.error(`Failed to initialize RE database: ${error}`, 'Startup');
+    logger.warn('Continuing without RE database - RE features will be unavailable', 'Startup');
+  }
+
   // Set up IPC handlers
   logger.debug('Setting up IPC handlers', 'Startup');
   setupIpcHandlers();

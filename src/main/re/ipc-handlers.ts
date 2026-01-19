@@ -294,47 +294,49 @@ export function registerREHandlers(): void {
   // EVENTS (Orchestrator events forwarded to renderer)
   // ============================================================
 
+  // Helper function to forward events to specific window (main window)
+  const forwardToMainWindow = (channel: string, data: any) => {
+    const { BrowserWindow } = require('electron');
+    const mainWindow = BrowserWindow.getAllWindows().find((w: any) => w.isFocused());
+
+    // Fall back to first window if no focused window
+    const targetWindow = mainWindow || BrowserWindow.getAllWindows()[0];
+
+    if (targetWindow && !targetWindow.isDestroyed()) {
+      targetWindow.webContents.send(channel, data);
+    }
+  };
+
   orchestrator.on('execution:start', (data) => {
-    // Forward event to all windows (TODO: send to specific window)
-    const windows = require('electron').BrowserWindow.getAllWindows();
-    windows.forEach((window: any) => {
-      window.webContents.send('re:execution:start', data);
-    });
+    forwardToMainWindow('re:execution:start', data);
   });
 
   orchestrator.on('execution:complete', (data) => {
-    const windows = require('electron').BrowserWindow.getAllWindows();
-    windows.forEach((window: any) => {
-      window.webContents.send('re:execution:complete', data);
-    });
+    forwardToMainWindow('re:execution:complete', data);
   });
 
   orchestrator.on('execution:error', (data) => {
-    const windows = require('electron').BrowserWindow.getAllWindows();
-    windows.forEach((window: any) => {
-      window.webContents.send('re:execution:error', data);
-    });
+    forwardToMainWindow('re:execution:error', data);
   });
 
   orchestrator.on('step:start', (data) => {
-    const windows = require('electron').BrowserWindow.getAllWindows();
-    windows.forEach((window: any) => {
-      window.webContents.send('re:step:start', data);
-    });
+    forwardToMainWindow('re:step:start', data);
   });
 
   orchestrator.on('step:complete', (data) => {
-    const windows = require('electron').BrowserWindow.getAllWindows();
-    windows.forEach((window: any) => {
-      window.webContents.send('re:step:complete', data);
-    });
+    forwardToMainWindow('re:step:complete', data);
   });
 
   orchestrator.on('step:error', (data) => {
-    const windows = require('electron').BrowserWindow.getAllWindows();
-    windows.forEach((window: any) => {
-      window.webContents.send('re:step:error', data);
-    });
+    forwardToMainWindow('re:step:error', data);
+  });
+
+  orchestrator.on('step:progress', (data) => {
+    forwardToMainWindow('re:step:progress', data);
+  });
+
+  orchestrator.on('execution:cancelled', (data) => {
+    forwardToMainWindow('re:execution:cancelled', data);
   });
 
   console.log('✅ RE IPC handlers registered');

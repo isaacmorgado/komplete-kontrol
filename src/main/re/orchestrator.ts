@@ -9,6 +9,7 @@ import { getREDatabase, REExecution, REWorkflow } from './re-database';
 import { EventEmitter } from 'events';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { ProcessManager } from '../process-manager';
 
 const execAsync = promisify(exec);
 
@@ -61,6 +62,15 @@ export class REOrchestrator extends EventEmitter {
   private selector = getToolSelector();
   private db = getREDatabase();
   private activeExecutions = new Map<string, REExecutionStatus>();
+  private activeProcessSessions = new Map<string, string>(); // executionId -> sessionId mapping
+  private processManager: ProcessManager | null = null;
+
+  /**
+   * Set ProcessManager instance (called from main process)
+   */
+  setProcessManager(processManager: ProcessManager): void {
+    this.processManager = processManager;
+  }
 
   /**
    * Create execution plan from natural language command
@@ -207,8 +217,8 @@ export class REOrchestrator extends EventEmitter {
     const startTime = Date.now();
 
     try {
-      // Execute tool via ProcessManager (TODO: integrate with actual ProcessManager)
-      const result = await this.executeTool(step);
+      // Execute tool via ProcessManager (integrated)
+      const result = await this.executeTool(step, status.id);
 
       stepResult.status = 'success';
       stepResult.output = result.output;
@@ -236,7 +246,7 @@ export class REOrchestrator extends EventEmitter {
    * Execute tool command using child_process exec
    * Captures stdout/stderr and exit code
    */
-  private async executeTool(step: REExecutionStep): Promise<{
+  private async executeTool(step: REExecutionStep, executionId: string): Promise<{
     output: string;
     exitCode: number;
     artifacts: string[];
@@ -264,10 +274,13 @@ export class REOrchestrator extends EventEmitter {
         this.emit('step:progress', { stepNumber: step.stepNumber, output });
       }
 
+      // Extract artifacts from output (files created, IPs found, etc.)
+      const artifacts = this.extractArtifacts(output, step);
+
       return {
         output,
         exitCode: 0,
-        artifacts: [] // TODO: Extract artifacts from output
+        artifacts
       };
     } catch (error: any) {
       // exec throws on non-zero exit codes
@@ -280,9 +293,47 @@ export class REOrchestrator extends EventEmitter {
       return {
         output,
         exitCode: error.code || 1,
-        artifacts: []
+        artifacts: this.extractArtifacts(output, step)
       };
     }
+  }
+
+  /**
+   * Extract artifacts from tool output
+   * Parses output for file paths, URLs, IPs, and other relevant artifacts
+   */
+  private extractArtifacts(output: string, step: REExecutionStep): string[] {
+    const artifacts: string[] = [];
+
+    // Extract file paths
+    const filePathPattern = /[\/\w\-._]+(\.\w{2,5})/g;
+    const matches = output.match(filePathPattern);
+    if (matches) {
+      artifacts.push(...matches);
+    }
+
+    // Extract IP addresses
+    const ipPattern = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g;
+    const ips = output.match(ipPattern);
+    if (ips) {
+      artifacts.push(...ips);
+    }
+
+    // Extract URLs
+    const urlPattern = /https?:\/\/[^\s]+/g;
+    const urls = output.match(urlPattern);
+    if (urls) {
+      artifacts.push(...urls);
+    }
+
+    // Extract hex addresses (common in RE output)
+    const hexPattern = /\b0x[0-9a-fA-F]+\b/g;
+    const hexAddresses = output.match(hexPattern);
+    if (hexAddresses) {
+      artifacts.push(...hexAddresses);
+    }
+
+    return [...new Set(artifacts)]; // Deduplicate
   }
 
   /**
@@ -419,7 +470,16 @@ export class REOrchestrator extends EventEmitter {
     status.status = 'cancelled';
     this.emit('execution:cancelled', { executionId });
 
-    // TODO: Kill running processes via ProcessManager
+    // Kill running process via ProcessManager
+    const sessionId = this.activeProcessSessions.get(executionId);
+    if (sessionId && this.processManager) {
+      try {
+        this.processManager.kill(sessionId);
+        this.activeProcessSessions.delete(executionId);
+      } catch (error) {
+        console.error(`Failed to kill session ${sessionId}:`, error);
+      }
+    }
   }
 
   /**
