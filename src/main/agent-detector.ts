@@ -5,9 +5,29 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AgentCapabilities, getAgentCapabilities } from './agent-capabilities';
 import { expandTilde, detectNodeVersionManagerBinPaths } from '../shared/pathUtils';
+import type { OperationalMode, ToolCallingMethod } from './modes/types';
 
 // Re-export AgentCapabilities for convenience
 export { AgentCapabilities } from './agent-capabilities';
+
+// ============================================================================
+// Section 4.2: Mode Support Types
+// ============================================================================
+
+/**
+ * Model profile for mode-specific model configurations
+ * Defines model settings per operational mode
+ */
+export interface ModelProfile {
+  /** Model identifier (provider/model format) */
+  model: string;
+  /** Tool calling method for this model */
+  toolCallingMethod: ToolCallingMethod;
+  /** Optional temperature override */
+  temperature?: number;
+  /** Optional max tokens override */
+  maxTokens?: number;
+}
 
 // Configuration option types for agent-specific settings
 export interface AgentConfigOption {
@@ -48,6 +68,19 @@ export interface AgentConfig {
   promptArgs?: (prompt: string) => string[]; // Function to build prompt args (e.g., ['-p', prompt] for OpenCode)
   noPromptSeparator?: boolean; // If true, don't add '--' before the prompt in batch mode (OpenCode doesn't support it)
   defaultEnvVars?: Record<string, string>; // Default environment variables for this agent (merged with user customEnvVars)
+
+  // ============================================================================
+  // Section 4.1: Mode Support Fields
+  // ============================================================================
+
+  /** Whether this agent supports the operational mode system */
+  supportsModes?: boolean;
+  /** Default operational mode for this agent */
+  defaultMode?: OperationalMode;
+  /** Function to build mode-specific CLI args */
+  modeArgs?: (mode: OperationalMode) => string[];
+  /** Model profiles for each operational mode */
+  modelProfiles?: Partial<Record<OperationalMode, ModelProfile>>;
 }
 
 export const AGENT_DEFINITIONS: Omit<AgentConfig, 'available' | 'path' | 'capabilities'>[] = [
@@ -60,6 +93,7 @@ export const AGENT_DEFINITIONS: Omit<AgentConfig, 'available' | 'path' | 'capabi
     args: [],
     requiresPty: true,
     hidden: true, // Internal agent, not shown in UI
+    supportsModes: false, // Terminal is not an AI agent
   },
   {
     id: 'claude-code',
@@ -70,12 +104,14 @@ export const AGENT_DEFINITIONS: Omit<AgentConfig, 'available' | 'path' | 'capabi
     args: ['--print', '--verbose', '--output-format', 'stream-json', '--dangerously-skip-permissions'],
     resumeArgs: (sessionId: string) => ['--resume', sessionId], // Resume with session ID
     readOnlyArgs: ['--permission-mode', 'plan'], // Read-only/plan mode
+    supportsModes: false, // Claude Code has its own mode system
   },
   {
     id: 'codex',
     name: 'Codex',
     binaryName: 'codex',
     command: 'codex',
+    supportsModes: false, // Codex does not support Komplete modes
     // Base args for interactive mode (no flags that are exec-only)
     args: [],
     // Codex CLI argument builders
@@ -108,6 +144,7 @@ export const AGENT_DEFINITIONS: Omit<AgentConfig, 'available' | 'path' | 'capabi
     binaryName: 'gemini',
     command: 'gemini',
     args: [],
+    supportsModes: false, // Gemini CLI does not support Komplete modes
   },
   {
     id: 'qwen3-coder',
@@ -115,12 +152,14 @@ export const AGENT_DEFINITIONS: Omit<AgentConfig, 'available' | 'path' | 'capabi
     binaryName: 'qwen3-coder',
     command: 'qwen3-coder',
     args: [],
+    supportsModes: false, // Qwen3 Coder does not support Komplete modes
   },
   {
     id: 'opencode',
     name: 'OpenCode',
     binaryName: 'opencode',
     command: 'opencode',
+    supportsModes: false, // OpenCode does not support Komplete modes
     args: [], // Base args (none for OpenCode - batch mode uses 'run' subcommand)
     // OpenCode CLI argument builders
     // Batch mode: opencode run --format json [--model provider/model] [--session <id>] [--agent plan] "prompt"
@@ -169,6 +208,60 @@ export const AGENT_DEFINITIONS: Omit<AgentConfig, 'available' | 'path' | 'capabi
     binaryName: 'aider',
     command: 'aider',
     args: [], // Base args (placeholder - to be configured when implemented)
+    supportsModes: false, // Aider does not support Komplete modes
+  },
+  // ============================================================================
+  // Section 4.3: Komplete Agent Definition
+  // ============================================================================
+  {
+    id: 'komplete',
+    name: 'Komplete',
+    binaryName: 'komplete',
+    command: 'komplete',
+    args: [],
+    supportsModes: true, // Komplete is the native mode-aware agent
+    defaultMode: 'code',
+    // Model profiles for each operational mode
+    modelProfiles: {
+      'architect': {
+        model: 'anthropic/claude-sonnet',
+        toolCallingMethod: 'native',
+        temperature: 0.3,
+        maxTokens: 8192,
+      },
+      'code': {
+        model: 'anthropic/claude-sonnet',
+        toolCallingMethod: 'native',
+        temperature: 0.2,
+        maxTokens: 4096,
+      },
+      'debug': {
+        model: 'fl/dolphin-2.9.3-llama-3.1-8b',
+        toolCallingMethod: 'emulated',
+        temperature: 0.1,
+        maxTokens: 4096,
+      },
+      'test': {
+        model: 'openai/gpt-4o',
+        toolCallingMethod: 'native',
+        temperature: 0.1,
+        maxTokens: 4096,
+      },
+      'reverse-engineer': {
+        model: 'fl/WhiteRabbitNeo-2.5-Qwen-2.5-Coder-7B',
+        toolCallingMethod: 'emulated',
+        temperature: 0.2,
+        maxTokens: 8192,
+      },
+      'ask': {
+        model: 'anthropic/claude-sonnet',
+        toolCallingMethod: 'native',
+        temperature: 0.5,
+        maxTokens: 2048,
+      },
+    },
+    // Function to build mode-specific CLI args
+    modeArgs: (mode: OperationalMode) => ['--mode', mode],
   },
 ];
 

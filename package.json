@@ -237,6 +237,7 @@
     "electron-store": "^8.1.0",
     "electron-updater": "^6.6.2",
     "fastify": "^4.25.2",
+    "gray-matter": "^4.0.3",
     "js-tiktoken": "^1.0.21",
     "marked": "^17.0.1",
     "mermaid": "^11.12.1",
@@ -252,6 +253,7 @@
     "rehype-slug": "^6.0.0",
     "remark-frontmatter": "^5.0.0",
     "remark-gfm": "^4.0.1",
+    "uuid": "^13.0.0",
     "ws": "^8.16.0"
   },
   "devDependencies": {

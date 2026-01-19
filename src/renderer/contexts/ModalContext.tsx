@@ -251,6 +251,10 @@ export interface ModalContextValue {
   setTourOpen: (open: boolean) => void;
   tourFromWizard: boolean;
   setTourFromWizard: (fromWizard: boolean) => void;
+
+  // RE Panel
+  showREPanel: boolean;
+  setShowREPanel: (open: boolean) => void;
 }
 
 // Create context with null as default (will throw if used outside provider)
@@ -424,6 +428,9 @@ export function ModalProvider({ children }: ModalProviderProps) {
   // Tour Overlay
   const [tourOpen, setTourOpen] = useState(false);
   const [tourFromWizard, setTourFromWizard] = useState(false);
+
+  // RE Panel
+  const [showREPanel, setShowREPanel] = useState(false);
 
   // Convenience methods
   const openSettings = useCallback((tab?: SettingsTab) => {
@@ -670,6 +677,10 @@ export function ModalProvider({ children }: ModalProviderProps) {
     setTourOpen,
     tourFromWizard,
     setTourFromWizard,
+
+    // RE Panel
+    showREPanel,
+    setShowREPanel,
   }), [
     // Settings Modal
     settingsModalOpen, settingsTab, openSettings, closeSettings,
@@ -753,6 +764,8 @@ export function ModalProvider({ children }: ModalProviderProps) {
     gitLogOpen,
     // Tour Overlay
     tourOpen, tourFromWizard,
+    // RE Panel
+    showREPanel,
   ]);
 
   return (

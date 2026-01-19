@@ -48,6 +48,31 @@ export {
   type OllamaConfig,
 } from './ollama';
 
+export {
+  FeatherlessProvider,
+  type FeatherlessConfig,
+} from './featherless';
+
+export {
+  GeminiProvider,
+  type GeminiConfig,
+} from './gemini';
+
+export {
+  GLMProvider,
+  type GLMConfig,
+} from './glm';
+
+// Model proxy server for universal tool calling
+export {
+  ModelProxyServer,
+  type ModelProxyConfig,
+  type ModelCapabilities,
+  type ExtractedToolCall,
+  initModelProxy,
+  getModelProxy,
+} from './model-proxy-server';
+
 /**
  * Initialize all default providers
  *
@@ -62,6 +87,9 @@ export async function initializeProviders(
     openai?: { apiKey?: string; baseUrl?: string; defaultModel?: string };
     anthropic?: { apiKey?: string; baseUrl?: string; defaultModel?: string };
     ollama?: { baseUrl?: string; defaultModel?: string };
+    featherless?: { apiKey?: string; baseUrl?: string; defaultModel?: string };
+    gemini?: { apiKey?: string; baseUrl?: string; defaultModel?: string };
+    glm?: { apiKey?: string; baseUrl?: string; defaultModel?: string };
   },
   logger?: any
 ): Promise<void> {
@@ -113,6 +141,54 @@ export async function initializeProviders(
         logger
       ),
       5 // Lower priority for local provider
+    );
+  }
+
+  // Register Featherless provider if API key is available
+  if (config.featherless?.apiKey) {
+    const { FeatherlessProvider } = await import('./featherless');
+    registry.register(
+      new FeatherlessProvider(
+        {
+          apiKey: config.featherless.apiKey,
+          baseUrl: config.featherless.baseUrl,
+          defaultModel: config.featherless.defaultModel ?? 'dolphin-3-venice-24b',
+        },
+        logger
+      ),
+      8 // High priority for abliterated models
+    );
+  }
+
+  // Register Gemini provider if API key is available
+  if (config.gemini?.apiKey) {
+    const { GeminiProvider } = await import('./gemini');
+    registry.register(
+      new GeminiProvider(
+        {
+          apiKey: config.gemini.apiKey,
+          baseUrl: config.gemini.baseUrl,
+          defaultModel: config.gemini.defaultModel ?? 'gemini-2.0-flash',
+        },
+        logger
+      ),
+      9 // High priority for fast, vision-capable models
+    );
+  }
+
+  // Register GLM provider if API key is available
+  if (config.glm?.apiKey) {
+    const { GLMProvider } = await import('./glm');
+    registry.register(
+      new GLMProvider(
+        {
+          apiKey: config.glm.apiKey,
+          baseUrl: config.glm.baseUrl,
+          defaultModel: config.glm.defaultModel ?? 'glm-4.7',
+        },
+        logger
+      ),
+      7 // Priority for multilingual/Chinese support
     );
   }
 }

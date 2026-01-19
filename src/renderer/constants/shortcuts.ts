@@ -30,6 +30,7 @@ export const DEFAULT_SHORTCUTS: Record<string, Shortcut> = {
   systemLogs: { id: 'systemLogs', label: 'System Log Viewer', keys: ['Alt', 'Meta', 'l'] },
   processMonitor: { id: 'processMonitor', label: 'System Process Monitor', keys: ['Alt', 'Meta', 'p'] },
   usageDashboard: { id: 'usageDashboard', label: 'Usage Dashboard', keys: ['Alt', 'Meta', 'u'] },
+  rePanel: { id: 'rePanel', label: 'Reverse Engineering Panel', keys: ['Alt', 'Meta', 'r'] },
   jumpToBottom: { id: 'jumpToBottom', label: 'Jump to Bottom', keys: ['Meta', 'Shift', 'j'] },
   prevTab: { id: 'prevTab', label: 'Previous Tab', keys: ['Meta', 'Shift', '['] },
   nextTab: { id: 'nextTab', label: 'Next Tab', keys: ['Meta', 'Shift', ']'] },

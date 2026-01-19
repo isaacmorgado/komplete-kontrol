@@ -23,7 +23,8 @@ import { registerGroupChatHandlers, GroupChatHandlerDependencies } from './group
 import { registerDebugHandlers, DebugHandlerDependencies } from './debug';
 import { registerSpeckitHandlers } from './speckit';
 import { registerOpenSpecHandlers } from './openspec';
-import { registerContextHandlers, ContextHandlerDependencies, cleanupAllGroomingSessions, getActiveGroomingSessionCount } from './context';
+import { registerContextHandlers } from './context';
+import { cancelAllGroomingSessions, getActiveGroomingSessionCount } from '../../utils/context-groomer';
 import { registerMarketplaceHandlers, MarketplaceHandlerDependencies } from './marketplace';
 import { registerStatsHandlers, StatsHandlerDependencies } from './stats';
 import { registerDocumentGraphHandlers, DocumentGraphHandlerDependencies } from './documentGraph';
@@ -52,7 +53,7 @@ export { registerGroupChatHandlers };
 export { registerDebugHandlers };
 export { registerSpeckitHandlers };
 export { registerOpenSpecHandlers };
-export { registerContextHandlers, cleanupAllGroomingSessions, getActiveGroomingSessionCount };
+export { registerContextHandlers, cancelAllGroomingSessions as cleanupAllGroomingSessions, getActiveGroomingSessionCount };
 export { registerMarketplaceHandlers };
 export type { MarketplaceHandlerDependencies };
 export { registerStatsHandlers };
@@ -68,7 +69,6 @@ export type { ClaudeHandlerDependencies };
 export type { AgentSessionsHandlerDependencies };
 export type { GroupChatHandlerDependencies };
 export type { DebugHandlerDependencies };
-export type { ContextHandlerDependencies };
 export type { StatsHandlerDependencies };
 export type { DocumentGraphHandlerDependencies };
 export type { SshRemoteHandlerDependencies };
@@ -179,11 +179,7 @@ export function registerAllHandlers(deps: HandlerDependencies): void {
   registerSpeckitHandlers();
   // Register OpenSpec handlers (no dependencies needed)
   registerOpenSpecHandlers();
-  registerContextHandlers({
-    getMainWindow: deps.getMainWindow,
-    getProcessManager: deps.getProcessManager,
-    getAgentDetector: deps.getAgentDetector,
-  });
+  registerContextHandlers();
   // Register marketplace handlers
   registerMarketplaceHandlers({
     app: deps.app,

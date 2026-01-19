@@ -80,6 +80,7 @@ import { AutoRunSetupModal } from './AutoRunSetupModal';
 import { LightboxModal } from './LightboxModal';
 import { GitDiffViewer } from './GitDiffViewer';
 import { GitLogViewer } from './GitLogViewer';
+import { REPanel } from './REPanel';
 
 // Group Chat Modal Components
 import { NewGroupChatModal } from './NewGroupChatModal';
@@ -876,6 +877,10 @@ export interface AppUtilityModalsProps {
   onRemoveQueueItem: (sessionId: string, itemId: string) => void;
   onSwitchQueueSession: (sessionId: string) => void;
   onReorderQueueItems: (sessionId: string, fromIndex: number, toIndex: number) => void;
+
+  // REPanel
+  showREPanel: boolean;
+  setShowREPanel: (open: boolean) => void;
 }
 
 /**
@@ -1045,6 +1050,9 @@ export function AppUtilityModals({
   onRemoveQueueItem,
   onSwitchQueueSession,
   onReorderQueueItems,
+  // REPanel
+  showREPanel,
+  setShowREPanel,
 }: AppUtilityModalsProps) {
   return (
     <>
@@ -1260,6 +1268,15 @@ export function AppUtilityModals({
         onSwitchSession={onSwitchQueueSession}
         onReorderItems={onReorderQueueItems}
       />
+
+      {/* --- RE PANEL --- */}
+      {showREPanel && (
+        <REPanel
+          theme={theme}
+          isOpen={showREPanel}
+          onClose={() => setShowREPanel(false)}
+        />
+      )}
     </>
   );
 }
@@ -1900,6 +1917,8 @@ export interface AppModalsProps {
   onRemoveQueueItem: (sessionId: string, itemId: string) => void;
   onSwitchQueueSession: (sessionId: string) => void;
   onReorderQueueItems: (sessionId: string, fromIndex: number, toIndex: number) => void;
+  showREPanel: boolean;
+  setShowREPanel: (open: boolean) => void;
 
   // --- AppGroupChatModals props ---
   showNewGroupChatModal: boolean;
@@ -2192,6 +2211,8 @@ export function AppModals(props: AppModalsProps) {
     onRemoveQueueItem,
     onSwitchQueueSession,
     onReorderQueueItems,
+    showREPanel,
+    setShowREPanel,
     // Group Chat modals
     showNewGroupChatModal,
     onCloseNewGroupChatModal,
@@ -2492,6 +2513,8 @@ export function AppModals(props: AppModalsProps) {
         onRemoveQueueItem={onRemoveQueueItem}
         onSwitchQueueSession={onSwitchQueueSession}
         onReorderQueueItems={onReorderQueueItems}
+        showREPanel={showREPanel}
+        setShowREPanel={setShowREPanel}
       />
 
       {/* Group Chat Modals */}

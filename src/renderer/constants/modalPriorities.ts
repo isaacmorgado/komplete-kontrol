@@ -101,6 +101,9 @@ export const MODAL_PRIORITIES = {
   /** Batch runner modal for scratchpad auto mode */
   BATCH_RUNNER: 720,
 
+  /** Reverse engineering panel */
+  RE_PANEL: 720,
+
   /** Tab switcher modal (Opt+Cmd+T) */
   TAB_SWITCHER: 710,
 

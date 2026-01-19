@@ -1754,6 +1754,70 @@ contextBridge.exposeInMainWorld('maestro', {
         };
       }>,
   },
+
+  // ============================================================================
+  // Reverse Engineering API
+  // ============================================================================
+  re: {
+    // Intent parsing
+    parseCommand: (input: string) => ipcRenderer.invoke('re:parseCommand', input),
+
+    // Tool selection
+    selectTools: (intent: any) => ipcRenderer.invoke('re:selectTools', intent),
+
+    // Execution planning and execution
+    plan: (input: string) => ipcRenderer.invoke('re:plan', input),
+    execute: (plan: any) => ipcRenderer.invoke('re:execute', plan),
+
+    // Status and control
+    getStatus: (executionId: string) => ipcRenderer.invoke('re:getStatus', executionId),
+    cancel: (executionId: string) => ipcRenderer.invoke('re:cancel', executionId),
+    getHistory: (limit?: number) => ipcRenderer.invoke('re:getHistory', limit),
+
+    // Database queries
+    listTools: (filters?: any) => ipcRenderer.invoke('re:listTools', filters),
+    getTool: (toolId: string) => ipcRenderer.invoke('re:getTool', toolId),
+    listWorkflows: (filters?: any) => ipcRenderer.invoke('re:listWorkflows', filters),
+    getWorkflow: (workflowId: string) => ipcRenderer.invoke('re:getWorkflow', workflowId),
+    checkToolAvailability: (toolNames: string[]) => ipcRenderer.invoke('re:checkToolAvailability', toolNames),
+
+    // Execution events
+    onExecutionStart: (callback: (executionId: string, plan: any) => void) => {
+      const handler = (_: any, executionId: string, plan: any) => callback(executionId, plan);
+      ipcRenderer.on('re:execution:start', handler);
+      return () => ipcRenderer.removeListener('re:execution:start', handler);
+    },
+    onStepStart: (callback: (executionId: string, stepIndex: number, step: any) => void) => {
+      const handler = (_: any, executionId: string, stepIndex: number, step: any) => callback(executionId, stepIndex, step);
+      ipcRenderer.on('re:step:start', handler);
+      return () => ipcRenderer.removeListener('re:step:start', handler);
+    },
+    onStepProgress: (callback: (executionId: string, stepIndex: number, output: string) => void) => {
+      const handler = (_: any, executionId: string, stepIndex: number, output: string) => callback(executionId, stepIndex, output);
+      ipcRenderer.on('re:step:progress', handler);
+      return () => ipcRenderer.removeListener('re:step:progress', handler);
+    },
+    onStepComplete: (callback: (executionId: string, stepIndex: number, result: any) => void) => {
+      const handler = (_: any, executionId: string, stepIndex: number, result: any) => callback(executionId, stepIndex, result);
+      ipcRenderer.on('re:step:complete', handler);
+      return () => ipcRenderer.removeListener('re:step:complete', handler);
+    },
+    onStepError: (callback: (executionId: string, stepIndex: number, error: any) => void) => {
+      const handler = (_: any, executionId: string, stepIndex: number, error: any) => callback(executionId, stepIndex, error);
+      ipcRenderer.on('re:step:error', handler);
+      return () => ipcRenderer.removeListener('re:step:error', handler);
+    },
+    onExecutionComplete: (callback: (executionId: string, results: any) => void) => {
+      const handler = (_: any, executionId: string, results: any) => callback(executionId, results);
+      ipcRenderer.on('re:execution:complete', handler);
+      return () => ipcRenderer.removeListener('re:execution:complete', handler);
+    },
+    onExecutionError: (callback: (executionId: string, error: any) => void) => {
+      const handler = (_: any, executionId: string, error: any) => callback(executionId, error);
+      ipcRenderer.on('re:execution:error', handler);
+      return () => ipcRenderer.removeListener('re:execution:error', handler);
+    },
+  },
 });
 
 // ============================================================================
@@ -1894,6 +1958,45 @@ contextBridge.exposeInMainWorld('komplete', {
       success: boolean;
       error?: string;
     }>,
+  },
+
+  // Skills system API
+  skills: {
+    /**
+     * List all available skills for a given mode
+     * @param mode - Optional mode to filter skills by
+     */
+    list: (mode?: string) => ipcRenderer.invoke('skills:list', mode) as Promise<Array<{
+      name: string;
+      description: string;
+      path: string;
+      source: 'global' | 'project';
+      mode?: string;
+      license?: string;
+      compatibility?: string;
+    }>>,
+
+    /**
+     * Get the full content of a specific skill
+     * @param name - The skill name
+     * @param mode - Optional mode to get skill from
+     */
+    get: (name: string, mode?: string) => ipcRenderer.invoke('skills:get', name, mode) as Promise<{
+      name: string;
+      description: string;
+      path: string;
+      source: 'global' | 'project';
+      mode?: string;
+      license?: string;
+      compatibility?: string;
+      instructions: string;
+    } | null>,
+
+    /**
+     * Reload skills from disk
+     * @param projectPath - Optional project path to reload skills for
+     */
+    reload: (projectPath?: string) => ipcRenderer.invoke('skills:reload', projectPath) as Promise<void>,
   },
 });
 
@@ -3302,6 +3405,28 @@ export interface KompleteAPI {
       success: boolean;
       error?: string;
     }>;
+  };
+  skills: {
+    list: (mode?: string) => Promise<Array<{
+      name: string;
+      description: string;
+      path: string;
+      source: 'global' | 'project';
+      mode?: string;
+      license?: string;
+      compatibility?: string;
+    }>>;
+    get: (name: string, mode?: string) => Promise<{
+      name: string;
+      description: string;
+      path: string;
+      source: 'global' | 'project';
+      mode?: string;
+      license?: string;
+      compatibility?: string;
+      instructions: string;
+    } | null>;
+    reload: (projectPath?: string) => Promise<void>;
   };
 }
 

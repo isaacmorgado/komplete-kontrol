@@ -355,6 +355,11 @@ export function useMainKeyboardHandler(): UseMainKeyboardHandlerReturn {
         ctx.setUsageDashboardOpen(true);
         trackShortcut('usageDashboard');
       }
+      else if (ctx.isShortcut(e, 'rePanel')) {
+        e.preventDefault();
+        ctx.setShowREPanel(true);
+        trackShortcut('rePanel');
+      }
       else if (ctx.isShortcut(e, 'jumpToBottom')) {
         e.preventDefault();
         // Jump to the bottom of the current main panel output (AI logs or terminal output)

@@ -16,6 +16,7 @@ import { getThemeById } from './themes';
 import Store from 'electron-store';
 import { getHistoryManager } from './history-manager';
 import { registerGitHandlers, registerAutorunHandlers, registerPlaybooksHandlers, registerHistoryHandlers, registerAgentsHandlers, registerProcessHandlers, registerPersistenceHandlers, registerSystemHandlers, registerClaudeHandlers, registerAgentSessionsHandlers, registerGroupChatHandlers, registerDebugHandlers, registerSpeckitHandlers, registerOpenSpecHandlers, registerContextHandlers, registerMarketplaceHandlers, registerStatsHandlers, registerDocumentGraphHandlers, registerSshRemoteHandlers, setupLoggerEventForwarding, cleanupAllGroomingSessions, getActiveGroomingSessionCount } from './ipc/handlers';
+import { registerREHandlers } from './re/ipc-handlers';
 import { initializeStatsDB, closeStatsDB, getStatsDB } from './stats-db';
 import { groupChatEmitters } from './ipc/handlers/groupChat';
 import { routeModeratorResponse, routeAgentResponse, setGetSessionsCallback, setGetCustomEnvVarsCallback, setGetAgentConfigCallback, markParticipantResponded, spawnModeratorSynthesis, getGroupChatReadOnlyState, respawnParticipantWithRecovery } from './group-chat/group-chat-router';
@@ -29,6 +30,7 @@ import type { SshRemoteConfig } from '../shared/types';
 import { initAutoUpdater } from './auto-updater';
 import { readDirRemote, readFileRemote, statRemote, directorySizeRemote, renameRemote, deleteRemote, countItemsRemote } from './utils/remote-fs';
 import { checkWslEnvironment } from './utils/wslDetector';
+import { getSkillsManager } from './skills';
 
 // ============================================================================
 // Custom Storage Location Configuration
@@ -868,6 +870,19 @@ app.whenReady().then(async () => {
     logger.warn('Continuing without stats - usage tracking will be unavailable', 'Startup');
   }
 
+  // Initialize skills manager
+  logger.info('Initializing skills manager', 'Startup');
+  try {
+    const skillsManager = getSkillsManager();
+    await skillsManager.initialize();
+    logger.info('Skills manager initialized', 'Startup');
+  } catch (error) {
+    // Skills initialization failed - log error but continue with app startup
+    // Skills will be unavailable but the app will still function
+    logger.error(`Failed to initialize skills manager: ${error}`, 'Startup');
+    logger.warn('Continuing without skills - skills system will be unavailable', 'Startup');
+  }
+
   // Set up IPC handlers
   logger.debug('Setting up IPC handlers', 'Startup');
   setupIpcHandlers();
@@ -951,12 +966,9 @@ app.on('before-quit', (event) => {
 
   // Clean up active grooming sessions (context merge/transfer operations)
   const groomingSessionCount = getActiveGroomingSessionCount();
-  if (groomingSessionCount > 0 && processManager) {
+  if (groomingSessionCount > 0) {
     logger.info(`Cleaning up ${groomingSessionCount} active grooming session(s)`, 'Shutdown');
-    // Fire and forget - don't await
-    cleanupAllGroomingSessions(processManager).catch(err => {
-      logger.error(`Error cleaning up grooming sessions: ${err}`, 'Shutdown');
-    });
+    cleanupAllGroomingSessions();
   }
 
   // Clean up all running processes
@@ -1189,11 +1201,7 @@ function setupIpcHandlers() {
   registerOpenSpecHandlers();
 
   // Register Context Merge handlers for session context transfer and grooming
-  registerContextHandlers({
-    getMainWindow: () => mainWindow,
-    getProcessManager: () => processManager,
-    getAgentDetector: () => agentDetector,
-  });
+  registerContextHandlers();
 
   // Register Marketplace handlers for fetching and importing playbooks
   registerMarketplaceHandlers({
@@ -1217,6 +1225,9 @@ function setupIpcHandlers() {
   registerSshRemoteHandlers({
     settingsStore: store,
   });
+
+  // Register Reverse Engineering handlers for RE module
+  registerREHandlers();
 
   // Set up callback for group chat router to lookup sessions for auto-add @mentions
   setGetSessionsCallback(() => {

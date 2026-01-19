@@ -195,11 +195,12 @@ export type CompletionResponse = CompletionResult;
  */
 export type ProviderPrefix =
   | 'or'   // OpenRouter
-  | 'g'    // Groq
+  | 'g'    // Google Gemini
   | 'oai'  // OpenAI
   | 'anthropic'  // Anthropic
   | 'ollama'  // Ollama
-  | 'fl';  // Featherless
+  | 'fl'   // Featherless
+  | 'glm';  // GLM (Z.AI)
 
 /**
  * Model configuration
